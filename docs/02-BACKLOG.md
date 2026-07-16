@@ -2,7 +2,8 @@
 
 ## Próximas entregas
 
-- Repositório D1 para análises e atividades, substituindo a implementação temporária em memória.
+- Aplicar a migration Sprint 5 no projeto Supabase definitivo e importar os dados D1 exportados.
+- Adicionar testes end-to-end contra um projeto Supabase local para validar cookies e RLS no PostgreSQL real.
 - Autenticação e isolamento completo por usuário.
 - Importação real via Outscraper com tratamento de limites e reprocessamento.
 - Aprovação e envio real de mensagens somente após integração autorizada.
@@ -14,5 +15,5 @@
 
 - Os mocks antigos ainda possuem um score de referência usado em telas legadas.
 - Ratings do esquema legado usam inteiros; normalizar a escala ao persistir dados reais.
-- A migração 0003 descarta análises do protótipo anterior, incompatíveis com o novo formato.
+- O D1 permanece como caminho de rollback até a validação completa da migração PostgreSQL.
 - Garantir que a futura persistência mantenha unicidade por lead e trilha de recálculos.

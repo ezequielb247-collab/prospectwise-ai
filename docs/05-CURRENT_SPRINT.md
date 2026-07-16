@@ -1,19 +1,19 @@
-# Sprint 4 — Lead Intelligence
+# Sprint 5 — Persistência Real e Autenticação
 
 ## Entregue
 
-- Motor determinístico de score com limite 0–100, classificação e prioridade.
-- Recomendações explicáveis, oportunidades e dados ausentes.
-- Análise individual, recálculo e análise de campanha via APIs internas.
-- Painel no detalhe do lead, métricas na campanha e Radar filtrável.
-- Contratos de repositório, eventos de atividade e migração da entidade de análise.
-- Testes automatizados das regras e fluxos centrais.
+- Supabase Auth para cadastro, login, logout, recuperação e sessão por cookies.
+- Proteção das rotas privadas e identidade derivada da sessão.
+- Migration PostgreSQL das entidades atuais, RLS e relações compostas por usuário.
+- Repositórios persistentes para campanhas, leads, mensagens, CRM, configurações e Lead Intelligence.
+- CRM otimista com rollback em falha, sem `localStorage` como fonte oficial.
+- Telas sem imports diretos dos mocks; demonstração isolada atrás de repositório.
+- Seed opcional, idempotente e bloqueado em produção.
+
+## Ativação pendente
+
+Criar um projeto Supabase, executar a migration e configurar as três variáveis indicadas no README. Sem elas, o ambiente local entra explicitamente em modo demonstração.
 
 ## Fora do escopo
 
-- OpenAI, WhatsApp, envios reais e chamadas ao Outscraper.
-- Alterações no CRM ou no gerador de mensagens.
-
-## Limitação temporária
-
-As análises da execução local ficam em memória e são reiniciadas com o servidor. A migração e a interface de repositório preparam a substituição por D1 sem alterar UI, API, serviço ou motor.
+- OpenAI, WhatsApp e qualquer provedor pago.

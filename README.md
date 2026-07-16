@@ -1,5 +1,19 @@
 # ProspectWise AI
 
+## Sprint 5 — Supabase
+
+1. Crie um projeto no Supabase.
+2. No SQL Editor, execute `supabase/migrations/202607160001_sprint5_schema_rls.sql`.
+3. Copie `.env.example` para `.env.local` e preencha:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=CHAVE_ANON
+SUPABASE_SERVICE_ROLE_KEY=CHAVE_SERVICE_ROLE
+```
+
+A chave `SUPABASE_SERVICE_ROLE_KEY` é usada somente pelo seed administrativo e nunca entra no bundle do navegador. Para popular uma conta de demonstração opcional, defina `DEMO_USER_EMAIL` e execute `npm run seed:demo` fora de produção. Sem as variáveis públicas, o desenvolvimento local usa modo demonstração explícito.
+
 MVP de um assistente de prospecção comercial para pesquisar, qualificar e organizar empresas locais. Esta versão roda integralmente em modo de demonstração: não consulta APIs pagas e não envia mensagens reais.
 
 ## Recursos disponíveis
