@@ -1,2 +1,2 @@
-import Workspace from "../Workspace";
-export default function Page(){return <Workspace page="crm"/>}
+import ProtectedWorkspace from "../ProtectedWorkspace";
+export default function Page(){return <ProtectedWorkspace page="crm"/>}

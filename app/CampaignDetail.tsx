@@ -1,5 +1,224 @@
 import Link from "next/link";
 import CampaignIntelligence from "./CampaignIntelligence";
-import type {campaignSnapshot} from "../lib/mock-campaigns";
-type Snapshot=NonNullable<ReturnType<typeof campaignSnapshot>>;
-export default function CampaignDetail({data}:{data:Snapshot}){const {campaign,leads,messages,events,metrics}=data;return <div className="app"><aside className="sidebar"><Link href="/dashboard" className="brand"><span className="brand-mark">P</span>ProspectWise <b>AI</b></Link><nav><Link href="/dashboard"><span>▦</span>Visão geral</Link><Link href="/campanhas" className="active"><span>◉</span>Campanhas</Link><Link href="/leads"><span>♙</span>Leads</Link><Link href="/radar"><span>◎</span>Radar</Link><Link href="/crm"><span>▥</span>CRM</Link><Link href="/mensagens"><span>✉</span>Mensagens</Link><Link href="/configuracoes"><span>⚙</span>Configurações</Link></nav></aside><main><header><Link href="/campanhas" className="back-link">← Todas as campanhas</Link><Link className="primary compact" href={`/leads/buscar?campaignId=${campaign.id}`}>⌕ Buscar empresas</Link></header><section className="content campaign-detail"><div className="page-heading"><div><span className={`badge ${campaign.status==="Ativa"?"success":"warning"}`}>● {campaign.status}</span><h1>{campaign.name}</h1><p>{campaign.segment} · {campaign.city}</p></div></div><div className="metrics campaign-detail-metrics">{[["Empresas",metrics.companies,"♙","blue"],["Mensagens",metrics.messages,"✉","violet"],["Respostas",metrics.responses,"↩","amber"],["Clientes",metrics.clients,"✓","green"]].map(([label,value,icon,tone])=><article className="metric" key={String(label)}><div className={`metric-icon ${tone}`}>{icon}</div><span>{label}</span><h2>{value}</h2><p>nesta campanha</p></article>)}</div><div className="grid-two campaign-overview"><article className="panel"><div className="panel-head"><div><h3>Progresso da campanha</h3><p>{metrics.companies} de {campaign.goal} empresas</p></div><b>{metrics.progress}%</b></div><div className="bar campaign-progress"><span style={{width:`${metrics.progress}%`}}/></div><div className="campaign-services">{campaign.services.map(service=><span className="badge neutral" key={service}>{service}</span>)}</div></article><article className="panel"><h3>Conversão</h3><div className="conversion-list"><span>Mensagens preparadas <b>{messages.filter(message=>message.status==="Preparada").length}</b></span><span>Mensagens enviadas <b>{messages.filter(message=>message.status!=="Preparada").length}</b></span><span>Taxa de resposta <b>{metrics.messages?Math.round(metrics.responses/metrics.messages*100):0}%</b></span><span>Clientes <b>{metrics.clients}</b></span></div></article></div><CampaignIntelligence campaignId={campaign.id}/><div className="grid-two campaign-content-grid"><article className="panel leads-panel"><div className="panel-head"><div><h3>Empresas da campanha</h3><p>Relacionadas exclusivamente a esta campanha</p></div></div><div className="table-wrap"><table><thead><tr><th>Empresa</th><th>Etapa CRM</th><th>Score</th><th>Mensagens</th></tr></thead><tbody>{leads.map(lead=><tr key={lead.id}><td><Link className="details-link" href={`/leads/${lead.id}`}>{lead.name}</Link></td><td><span className="badge neutral">{lead.status}</span></td><td><span className={`score ${lead.score>85?"high":""}`}>{lead.score}</span></td><td>{messages.filter(message=>message.leadId===lead.id).length}</td></tr>)}</tbody></table></div></article><article className="panel timeline-panel"><div className="panel-head"><div><h3>Histórico da campanha</h3><p>Eventos em ordem cronológica</p></div></div><div className="timeline">{events.map(event=><div className="timeline-event" key={event.id}><i/><div><b>{event.title}</b><p>{event.description}</p><small>{new Date(event.createdAt).toLocaleString("pt-BR",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</small></div></div>)}{!events.length&&<p>Nenhum evento registrado.</p>}</div></article></div></section></main></div>}
+import type {CampaignDetailData} from "../lib/workspace-data";
+type Snapshot = CampaignDetailData;
+export default function CampaignDetail({ data }: { data: Snapshot }) {
+  const { campaign, leads, messages, events, metrics } = data;
+  return (
+    <div className="app">
+      <aside className="sidebar">
+        <Link href="/dashboard" className="brand">
+          <span className="brand-mark">P</span>ProspectWise <b>AI</b>
+        </Link>
+        <nav>
+          <Link href="/dashboard">
+            <span>▦</span>Visão geral
+          </Link>
+          <Link href="/campanhas" className="active">
+            <span>◉</span>Campanhas
+          </Link>
+          <Link href="/leads">
+            <span>♙</span>Leads
+          </Link>
+          <Link href="/radar">
+            <span>◎</span>Radar
+          </Link>
+          <Link href="/crm">
+            <span>▥</span>CRM
+          </Link>
+          <Link href="/mensagens">
+            <span>✉</span>Mensagens
+          </Link>
+          <Link href="/configuracoes">
+            <span>⚙</span>Configurações
+          </Link>
+        </nav>
+      </aside>
+      <main>
+        <header>
+          <Link href="/campanhas" className="back-link">
+            ← Todas as campanhas
+          </Link>
+          <Link
+            className="primary compact"
+            href={`/leads/buscar?campaignId=${campaign.id}`}
+          >
+            ⌕ Buscar empresas
+          </Link>
+        </header>
+        <section className="content campaign-detail">
+          <div className="page-heading">
+            <div>
+              <span
+                className={`badge ${campaign.status === "Ativa" ? "success" : "warning"}`}
+              >
+                ● {campaign.status}
+              </span>
+              <h1>{campaign.name}</h1>
+              <p>
+                {campaign.segment} · {campaign.city}
+              </p>
+            </div>
+          </div>
+          <div className="metrics campaign-detail-metrics">
+            {[
+              ["Empresas", metrics.companies, "♙", "blue"],
+              ["Mensagens", metrics.messages, "✉", "violet"],
+              ["Respostas", metrics.responses, "↩", "amber"],
+              ["Clientes", metrics.clients, "✓", "green"],
+            ].map(([label, value, icon, tone]) => (
+              <article className="metric" key={String(label)}>
+                <div className={`metric-icon ${tone}`}>{icon}</div>
+                <span>{label}</span>
+                <h2>{value}</h2>
+                <p>nesta campanha</p>
+              </article>
+            ))}
+          </div>
+          <div className="grid-two campaign-overview">
+            <article className="panel">
+              <div className="panel-head">
+                <div>
+                  <h3>Progresso da campanha</h3>
+                  <p>
+                    {metrics.companies} de {campaign.goal} empresas
+                  </p>
+                </div>
+                <b>{metrics.progress}%</b>
+              </div>
+              <div className="bar campaign-progress">
+                <span style={{ width: `${metrics.progress}%` }} />
+              </div>
+              <div className="campaign-services">
+                {campaign.services.map((service) => (
+                  <span className="badge neutral" key={service}>
+                    {service}
+                  </span>
+                ))}
+              </div>
+            </article>
+            <article className="panel">
+              <h3>Conversão</h3>
+              <div className="conversion-list">
+                <span>
+                  Mensagens preparadas{" "}
+                  <b>
+                    {
+                      messages.filter(
+                        (message) => message.status === "Preparada",
+                      ).length
+                    }
+                  </b>
+                </span>
+                <span>
+                  Mensagens enviadas{" "}
+                  <b>
+                    {
+                      messages.filter(
+                        (message) => message.status !== "Preparada",
+                      ).length
+                    }
+                  </b>
+                </span>
+                <span>
+                  Taxa de resposta{" "}
+                  <b>
+                    {metrics.messages
+                      ? Math.round((metrics.responses / metrics.messages) * 100)
+                      : 0}
+                    %
+                  </b>
+                </span>
+                <span>
+                  Clientes <b>{metrics.clients}</b>
+                </span>
+              </div>
+            </article>
+          </div>
+          <CampaignIntelligence campaignId={campaign.id} />
+          <div className="grid-two campaign-content-grid">
+            <article className="panel leads-panel">
+              <div className="panel-head">
+                <div>
+                  <h3>Empresas da campanha</h3>
+                  <p>Relacionadas exclusivamente a esta campanha</p>
+                </div>
+              </div>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Empresa</th>
+                      <th>Etapa CRM</th>
+                      <th>Score</th>
+                      <th>Mensagens</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leads.map((lead) => (
+                      <tr key={lead.id}>
+                        <td>
+                          <Link
+                            className="details-link"
+                            href={`/leads/${lead.id}`}
+                          >
+                            {lead.name}
+                          </Link>
+                        </td>
+                        <td>
+                          <span className="badge neutral">{lead.status}</span>
+                        </td>
+                        <td>
+                          <span
+                            className={`score ${lead.score > 85 ? "high" : ""}`}
+                          >
+                            {lead.score}
+                          </span>
+                        </td>
+                        <td>
+                          {
+                            messages.filter(
+                              (message) => message.leadId === lead.id,
+                            ).length
+                          }
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </article>
+            <article className="panel timeline-panel">
+              <div className="panel-head">
+                <div>
+                  <h3>Histórico da campanha</h3>
+                  <p>Eventos em ordem cronológica</p>
+                </div>
+              </div>
+              <div className="timeline">
+                {events.map((event) => (
+                  <div className="timeline-event" key={event.id}>
+                    <i />
+                    <div>
+                      <b>{event.title}</b>
+                      <p>{event.description}</p>
+                      <small>
+                        {new Date(event.createdAt).toLocaleString("pt-BR", {
+                          day: "2-digit",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </small>
+                    </div>
+                  </div>
+                ))}
+                {!events.length && <p>Nenhum evento registrado.</p>}
+              </div>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
