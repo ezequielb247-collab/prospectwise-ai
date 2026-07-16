@@ -160,9 +160,14 @@ export default function Workspace({
               </p>
             </div>
             {page === "leads" ? (
-              <Link href="/leads/buscar" className="primary">
-                ⌕ Buscar Empresas
-              </Link>
+              <div className="actions">
+                <Link href="/leads/importar" className="secondary">
+                  Importar CSV
+                </Link>
+                <Link href="/leads/buscar" className="primary">
+                  ⌕ Buscar Empresas
+                </Link>
+              </div>
             ) : (
               !["dashboard", "configuracoes"].includes(page) && (
                 <Link href="/campanhas/nova" className="primary">

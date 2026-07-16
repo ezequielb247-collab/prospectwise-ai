@@ -1,19 +1,20 @@
-# Sprint 5 — Persistência Real e Autenticação
+# Sprint 6 — Importação Gratuita de Empresas por CSV
 
 ## Entregue
 
-- Supabase Auth para cadastro, login, logout, recuperação e sessão por cookies.
-- Proteção das rotas privadas e identidade derivada da sessão.
-- Migration PostgreSQL das entidades atuais, RLS e relações compostas por usuário.
-- Repositórios persistentes para campanhas, leads, mensagens, CRM, configurações e Lead Intelligence.
-- CRM otimista com rollback em falha, sem `localStorage` como fonte oficial.
-- Telas sem imports diretos dos mocks; demonstração isolada atrás de repositório.
-- Seed opcional, idempotente e bloqueado em produção.
+- Upload de CSV ou colagem de dados, com limite de 2 MB e 5.000 linhas.
+- Reconhecimento de cabeçalhos em português e inglês e mapeamento manual.
+- Pré-visualização de linhas válidas, inválidas, duplicadas e campos ausentes.
+- Normalização de telefone, URL, nomes, cidades, estados, notas e avaliações.
+- Deduplicação por telefone, domínio, nome + cidade, endereço e Google Maps URL.
+- Importação transacional vinculada ao usuário e à campanha, com etapa CRM `Novo`, provider `csv_import` e atividade `lead_imported`.
+- Modelo em `public/modelo-importacao-leads.csv`.
+- Testes de parsing, segurança, isolamento, campanha e persistência.
 
-## Ativação pendente
+## Ativação
 
-Criar um projeto Supabase, executar a migration e configurar as três variáveis indicadas no README. Sem elas, o ambiente local entra explicitamente em modo demonstração.
+Execute `supabase/migrations/202607160003_csv_import.sql` no SQL Editor do Supabase depois das migrations anteriores.
 
 ## Fora do escopo
 
-- OpenAI, WhatsApp e qualquer provedor pago.
+- Google Places, Outscraper, OpenAI, WhatsApp e qualquer provedor pago.

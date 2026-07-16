@@ -39,12 +39,14 @@ export default function CampaignDetail({ data }: { data: Snapshot }) {
           <Link href="/campanhas" className="back-link">
             ← Todas as campanhas
           </Link>
-          <Link
-            className="primary compact"
-            href={`/leads/buscar?campaignId=${campaign.id}`}
-          >
-            ⌕ Buscar empresas
-          </Link>
+          <div className="actions">
+            <Link className="secondary compact" href={`/leads/importar?campaignId=${campaign.id}`}>
+              Importar CSV
+            </Link>
+            <Link className="primary compact" href={`/leads/buscar?campaignId=${campaign.id}`}>
+              ⌕ Buscar empresas
+            </Link>
+          </div>
         </header>
         <section className="content campaign-detail">
           <div className="page-heading">
