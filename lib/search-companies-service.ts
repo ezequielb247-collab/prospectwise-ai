@@ -1,0 +1,6 @@
+import type {LeadProvider,LeadResult,SearchCompaniesInput} from "./providers";
+export type ImportStats={imported:number;duplicates:number;ignored:number;errors:number};
+export interface LeadRepository{saveUnique(userId:string,companies:LeadResult[]):Promise<{saved:LeadResult[];stats:ImportStats}>}
+export class SearchCompaniesService{constructor(private readonly provider:LeadProvider,private readonly repository:LeadRepository){}async execute(userId:string,input:SearchCompaniesInput){const companies=await this.provider.search(input);const valid=companies.filter(company=>company.name&&company.address);const ignored=companies.length-valid.length;const result=await this.repository.saveUnique(userId,valid);return {provider:this.provider.name,companies:valid,stats:{...result.stats,ignored:result.stats.ignored+ignored}}}}
+
+export class InMemoryLeadRepository implements LeadRepository{private records=new Map<string,LeadResult>();async saveUnique(userId:string,companies:LeadResult[]){const saved:LeadResult[]=[];let duplicates=0;for(const company of companies){const key=`${userId}:${company.externalId||company.phone}`;if(this.records.has(key)){duplicates++;continue}this.records.set(key,company);saved.push(company)}return {saved,stats:{imported:saved.length,duplicates,ignored:0,errors:0}}}}

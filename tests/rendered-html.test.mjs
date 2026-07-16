@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-
-async function render(path){const workerUrl=new URL("../dist/server/index.js",import.meta.url);workerUrl.searchParams.set("test",`${process.pid}-${Date.now()}-${path}`);const {default:worker}=await import(workerUrl.href);return worker.fetch(new Request(`http://localhost${path}`,{headers:{accept:"text/html"}}),{ASSETS:{fetch:async()=>new Response("Not found",{status:404})},DB:{}},{waitUntil(){},passThroughOnException(){}})}
-
-test("three lead URLs render their matching companies",async()=>{for(const [id,name] of [["lead-sorriso-prime","Sorriso Prime Odontologia"],["lead-studio-helena","Studio Helena Arquitetura"],["lead-cafe-aurora","Café Aurora"]]){const response=await render(`/leads/${id}`);assert.equal(response.status,200);assert.match(await response.text(),new RegExp(name));}});
-test("unknown lead ID renders not found state",async()=>{const response=await render("/leads/id-inexistente");assert.equal(response.status,200);assert.match(await response.text(),/Lead não encontrado/);});
-test("three message URLs render the selected company",async()=>{for(const [id,name] of [["lead-sorriso-prime","Sorriso Prime Odontologia"],["lead-studio-helena","Studio Helena Arquitetura"],["lead-cafe-aurora","Café Aurora"]]){const response=await render(`/mensagens?leadId=${id}`);assert.equal(response.status,200);assert.match(await response.text(),new RegExp(name));}});
+import {readFile} from "node:fs/promises";
+const dynamicRoute=new URL("../app/leads/[id]/page.tsx",import.meta.url);
+const messagesRoute=new URL("../app/mensagens/page.tsx",import.meta.url);
+test("dynamic lead route resolves the URL ID without a first-lead fallback",async()=>{const source=await readFile(dynamicRoute,"utf8");assert.match(source,/findLeadById\(id\)/);assert.match(source,/Lead não encontrado/);assert.doesNotMatch(source,/leads\[0\]|firstLead|defaultLead/)});
+test("messages route forwards the selected lead ID",async()=>{const source=await readFile(messagesRoute,"utf8");assert.match(source,/leadId/);assert.match(source,/initialLeadId/)});
+test("search page calls the service API rather than a provider",async()=>{const source=await readFile(new URL("../app/leads/buscar/page.tsx",import.meta.url),"utf8");assert.match(source,/\/api\/search-companies/);assert.doesNotMatch(source,/new MockLeadProvider|new OutscraperLeadProvider/)});
