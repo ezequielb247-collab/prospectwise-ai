@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";

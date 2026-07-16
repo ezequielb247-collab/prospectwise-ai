@@ -1,5 +1,5 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { WorkspaceData } from "../lib/workspace-model";
