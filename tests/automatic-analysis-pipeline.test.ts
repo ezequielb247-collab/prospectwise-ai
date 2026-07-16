@@ -11,9 +11,13 @@ import {
   type LeadIntelligenceDataSource,
 } from "../lib/intelligence/repositories";
 import type { LeadIntelligenceInput } from "../lib/intelligence/types";
+import type { LeadAnalysisRepository } from "../lib/intelligence/repositories";
 
 class Source implements LeadIntelligenceDataSource {
   constructor(readonly leads: LeadIntelligenceInput[]) {}
+  async campaignExists(campaignId: string) {
+    return this.leads.some((lead) => lead.campaignId === campaignId);
+  }
   async findLeadById(id: string) {
     return this.leads.find((lead) => lead.id === id);
   }
@@ -120,4 +124,58 @@ test("CRM e Dashboard leem a classificação persistida", () => {
   assert.match(workspace, /classification,priority,recommended_services,reasons/);
   assert.match(workspace, /classification: analyses\.get\(lead\.id\)/);
   assert.match(crm, /lead\.classification/);
+});
+
+test("erro isolado em lead é registrado e os demais continuam", async () => {
+  const source = new Source([lead("lead-a"), lead("lead-b")]);
+  const stored = new InMemoryLeadAnalysisRepository();
+  const repository: LeadAnalysisRepository = {
+    ...stored,
+    findByLeadId: (id) => stored.findByLeadId(id),
+    findByCampaignId: (id) => stored.findByCampaignId(id),
+    list: () => stored.list(),
+    upsert: (analysis) =>
+      analysis.leadId === "lead-a"
+        ? Promise.reject(Object.assign(new Error("invalid uuid"), { code: "22P02" }))
+        : stored.upsert(analysis),
+  };
+  const events: string[] = [];
+  const service = new LeadIntelligenceService(
+    source,
+    new LeadScoringEngine(),
+    repository,
+    new InMemoryIntelligenceActivityRepository(),
+  );
+  const analyses = await service.analyzeLeadIds(
+    "campaign-a",
+    ["lead-a", "lead-b"],
+    {
+      continueOnError: true,
+      onEvent: (event) => events.push(`${event.stage}:${event.leadId ?? ""}`),
+    },
+  );
+  assert.deepEqual(analyses.map((item) => item.leadId), ["lead-b"]);
+  assert.ok(events.includes("lead_error:lead-a"));
+  assert.ok(events.includes("persistence:lead-b"));
+});
+
+test("endpoint mantém erro genérico em produção e diagnóstico em desenvolvimento", () => {
+  const route = fs.readFileSync(
+    "app/api/intelligence/campaigns/[id]/route.ts",
+    "utf8",
+  );
+  assert.match(route, /process\.env\.NODE_ENV === "development"/);
+  for (const field of ["name", "message", "code", "details", "hint", "stack"])
+    assert.match(route, new RegExp(`${field}: info\\.${field}`));
+  assert.match(route, /: \{ error: "Falha ao analisar campanha\." \}/);
+});
+
+test("persistência usa UUID gerado pelo banco para lead_analyses", () => {
+  const repository = fs.readFileSync(
+    "lib/intelligence/supabase-repository.ts",
+    "utf8",
+  );
+  const upsertRow = repository.slice(repository.indexOf("async upsert"));
+  assert.doesNotMatch(upsertRow.slice(0, upsertRow.indexOf("const { data")), /id: value\.id/);
+  assert.match(upsertRow, /upsert\(row, \{ onConflict: "lead_id" \}\)/);
 });

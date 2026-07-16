@@ -56,6 +56,17 @@ export class SupabaseIntelligenceRepository
     };
   }
 
+  async campaignExists(id: string) {
+    const { data, error } = await this.client
+      .from("campaigns")
+      .select("id")
+      .eq("user_id", this.userId)
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    return Boolean(data);
+  }
+
   async findLeadById(id: string) {
     const { data, error } = await this.client
       .from("leads")
@@ -135,7 +146,6 @@ export class SupabaseIntelligenceRepository
 
   async upsert(value: LeadAnalysis) {
     const row = {
-      id: value.id,
       user_id: this.userId,
       lead_id: value.leadId,
       campaign_id: value.campaignId,
