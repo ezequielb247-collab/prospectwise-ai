@@ -1,5 +1,13 @@
 # Changelog
 
+## Sprint 10.1 — Revisão Visual e Consistência
+
+- Design system interno com primitivas reutilizáveis para páginas, seções, formulários, ações, alertas, indicadores, estados vazios, tabelas e layouts móveis.
+- Página de Leads reorganizada com seleção na tabela, checkbox no cabeçalho, plural correto e ações em massa separadas.
+- Presença digital e criação de proposta reorganizadas em grids acessíveis, com labels vinculados e feedback de processamento.
+- Indicadores de produtividade, menus de ações secundárias, traduções de status, foco por teclado e responsividade padronizados.
+- Revisão visual transversal aplicada por estilos compartilhados, sem alterar regras de negócio ou integrações.
+
 ## Sprint 10 — Motor Comercial Completo
 
 - Inteligência v2 explicável; listas e ações em massa; presença digital manual.

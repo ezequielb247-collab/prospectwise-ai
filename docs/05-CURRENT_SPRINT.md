@@ -1,10 +1,11 @@
-# Sprint 10 — Motor Comercial Completo
+# Sprint 10.1 — Revisão Visual e Consistência
 
-**Status:** Concluída localmente — migration pendente de aplicação
+**Status:** Concluída localmente
 
-Qualificação v2, presença digital manual, listas, ações em massa, mensagens personalizadas, prospecção manual, propostas, objeções, dashboard executivo, onboarding e configurações comerciais foram implementados.
+Revisão transversal de apresentação e usabilidade, sem mudanças nas regras de negócio, persistência, autenticação ou integrações.
 
-- Nenhuma mensagem é enviada automaticamente.
-- Google Places e Outscraper ficam desativados sem flag, credencial e confirmação.
-- CSV e colagem permanecem gratuitos.
-- `202607160009_sprint10_commercial_engine.sql` ainda precisa ser aplicada e validada no Supabase.
+- Primitivas reutilizáveis para cabeçalhos, seções, formulários, ações, estados e status.
+- Leads com seleção por linha, checkbox de página e barra de ações em massa responsiva.
+- Detalhes do lead com presença digital, proposta e indicadores comerciais reorganizados.
+- Tabelas, formulários, feedback, foco de teclado e breakpoints padronizados globalmente.
+- Valores internos de status preservados, com tradução somente na apresentação.
