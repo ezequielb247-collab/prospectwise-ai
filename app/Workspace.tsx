@@ -9,6 +9,8 @@ import { logoutAction } from "./auth/actions";
 import MessageCenter from "./MessageCenter";
 import BulkLeadActions from "./BulkLeadActions";
 import ExecutiveMetrics from "./ExecutiveMetrics";
+import OnboardingChecklist from "./OnboardingChecklist";
+import ProductSettingsPanel from "./ProductSettingsPanel";
 import {
   dashboardMetrics,
   exportLeadsCsv,
@@ -308,7 +310,7 @@ function Dashboard({ data }: { data: WorkspaceData }) {
     ["Mensagens agendadas", summary.scheduled, "◷", "blue"],
   ];
   return (
-    <><ExecutiveMetrics />
+    <><OnboardingChecklist/><ExecutiveMetrics />
       <div className="metrics">
         {metrics.map(([label, value, icon, tone]) => (
           <article className="metric" key={label}>
@@ -1384,7 +1386,7 @@ function Settings({ setNotice }: { setNotice: (v: string) => void }) {
       })
       .catch(() => setNotice("Não foi possível salvar as configurações."));
   }
-  return (
+  return (<>
     <form className="settings-grid" onSubmit={save}>
       <article className="panel">
         <h3>Limites de envio</h3>
@@ -1472,5 +1474,5 @@ function Settings({ setNotice }: { setNotice: (v: string) => void }) {
       </article>
       <button className="primary save">Salvar configurações</button>
     </form>
-  );
+  <ProductSettingsPanel/></>);
 }

@@ -1,0 +1,5 @@
+export type FeatureFlags={google_places_enabled:boolean;outscraper_enabled:boolean;deterministic_messages_v2:boolean;proposals_enabled:boolean;manual_prospecting_enabled:boolean};
+export const DEFAULT_FLAGS:FeatureFlags={google_places_enabled:false,outscraper_enabled:false,deterministic_messages_v2:true,proposals_enabled:true,manual_prospecting_enabled:true};
+export type ProductSettings={dailyLimit:number;offeredServices:string[];defaultPrices:Record<string,number>;defaultCta:string;signature:string;baseCity:string;timezone:string;defaultProvider:string;automaticAnalysis:boolean;openRadarAfterImport:boolean;featureFlags:FeatureFlags};
+export function effectiveFlags(flags:Partial<FeatureFlags>|null,env:Record<string,string|undefined>){const value={...DEFAULT_FLAGS,...flags};return{...value,outscraper_enabled:value.outscraper_enabled&&Boolean(env.OUTSCRAPER_API_KEY),google_places_enabled:value.google_places_enabled&&Boolean(env.GOOGLE_PLACES_API_KEY)}}
+export const ONBOARDING_STEPS=["profile","campaign","import","analyze","list","messages","prospecting"]as const;
