@@ -95,7 +95,7 @@ export async function getWorkspaceData(userId: string): Promise<WorkspaceData> {
           companies: campaignLeads.length,
           messages: campaignMessages.length,
           responses: campaignMessages.filter(
-            (message) => message.status === "Respondida",
+            (message) => ["Respondida","responded"].includes(message.status),
           ).length,
           clients: campaignLeads.filter((lead) => lead.status === "Cliente")
             .length,

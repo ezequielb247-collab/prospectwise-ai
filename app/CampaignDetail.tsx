@@ -43,6 +43,9 @@ export default function CampaignDetail({ data }: { data: Snapshot }) {
             <Link className="secondary compact" href={`/leads/importar?campaignId=${campaign.id}`}>
               Importar CSV
             </Link>
+            <Link className="secondary compact" href={`/mensagens?campaignId=${campaign.id}`}>
+              Gerar mensagens
+            </Link>
             <Link className="primary compact" href={`/leads/buscar?campaignId=${campaign.id}`}>
               ⌕ Buscar empresas
             </Link>

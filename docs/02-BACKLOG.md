@@ -1,5 +1,13 @@
 # Backlog
 
+## Sprint 7 — Sistema de Mensagens Comerciais
+
+- [x] Templates por usuário, tipo e canal.
+- [x] Geração determinística com avisos de dados ausentes.
+- [x] Rascunho, preparação, aprovação, cancelamento e reabertura.
+- [x] Geração em lote, painel, filtros, detalhes e exportação CSV.
+- [ ] Envio real por WhatsApp, e-mail ou outro canal (fora desta sprint).
+
 ## Próximas entregas
 
 - Aplicar a migration Sprint 5 no projeto Supabase definitivo e importar os dados D1 exportados.

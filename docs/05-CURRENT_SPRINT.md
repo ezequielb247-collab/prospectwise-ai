@@ -1,20 +1,20 @@
-# Sprint 6.5 — Polimento do Produto
+# Sprint 7 — Sistema de Mensagens Comerciais
+
+**Status:** Em andamento  
+**Objetivo:** Preparar e organizar abordagens comerciais sem envio externo.
 
 ## Entregue
 
-- Dashboard com oito métricas reais, distribuição por CRM e campanha e atividades recentes.
-- Pesquisa global instantânea por empresa, campanha, telefone, cidade e categoria.
-- Filtros combináveis, seis ordenações, paginação e busca rápida na lista de leads.
-- Edição e exclusão auditadas; o score continua exclusivamente calculado pelo Lead Intelligence.
-- Exportação CSV de todos, filtrados ou campanha atual, com neutralização de fórmulas.
-- Métricas enriquecidas e duplicação de campanhas.
-- Filtros rápidos no Radar, skeletons, empty states, foco visível e ajustes responsivos.
-- Migration de observações, índice de filtros e preservação do histórico após excluir um lead.
+- Biblioteca opcional com cinco templates iniciais.
+- Engine determinístico com variáveis permitidas, sanitização e avisos.
+- Criação individual e em lote, edição, aprovação, cancelamento, duplicação e reabertura.
+- Painel com busca, filtros, ordenação, detalhes e exportação CSV segura.
+- Auditoria por mensagem e isolamento por usuário com RLS.
 
 ## Ativação
 
-Execute `supabase/migrations/202607160004_product_polish.sql` após a migration da Sprint 6.
+Execute `supabase/migrations/202607160005_commercial_messages.sql` depois das migrations anteriores.
 
 ## Fora do escopo
 
-- Google Places, Outscraper, OpenAI, WhatsApp e quaisquer APIs externas.
+- OpenAI, WhatsApp, e-mail, APIs externas e qualquer envio real.

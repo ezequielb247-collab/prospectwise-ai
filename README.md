@@ -1,5 +1,9 @@
 # ProspectWise AI
 
+## Sprint 7 — mensagens comerciais
+
+Execute `supabase/migrations/202607160005_commercial_messages.sql` no SQL Editor do Supabase. Depois, abra Mensagens e use “Criar templates iniciais”. O sistema prepara, revisa e aprova abordagens, mas não envia mensagens e não utiliza OpenAI, WhatsApp, e-mail ou APIs externas.
+
 ## Sprint 5 — Supabase
 
 1. Crie um projeto no Supabase.

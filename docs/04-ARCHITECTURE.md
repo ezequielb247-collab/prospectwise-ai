@@ -28,3 +28,12 @@ UI → API/Server Action → Serviço de domínio → Interface → Repositório
 ```
 
 O SDK do Supabase fica restrito a `lib/supabase`. A identidade vem da sessão validada no servidor. Todas as consultas usam `user_id`, enquanto RLS e chaves estrangeiras compostas aplicam uma segunda barreira no PostgreSQL.
+
+## Mensagens comerciais
+
+```text
+MessageCenter → API interna → MessageService → MessageTemplateEngine
+                                      ↘ MessageRepository → Supabase + RLS
+```
+
+O engine é puro, aceita somente variáveis declaradas e nunca executa conteúdo do template. O serviço valida campanha, propriedade, opt-out, duplicidade e transições. Nenhum componente cliente importa Supabase e não existe provider de envio nesta sprint.

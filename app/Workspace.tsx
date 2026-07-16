@@ -1,14 +1,15 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { CRM_STAGES, type CrmStage } from "../lib/crm";
 import {
-  buildWorkspaceLeadMessage,
   type WorkspaceData,
   type WorkspaceLead,
 } from "../lib/workspace-model";
 import {logoutAction} from "./auth/actions";
+import MessageCenter from "./MessageCenter";
 import {dashboardMetrics,exportLeadsCsv,filterLeads,globalSearch,paginate,sortLeads,type LeadSort} from "../lib/workspace-insights";
 const navigation = [
   ["dashboard", "▦", "Visão geral"],
@@ -203,7 +204,7 @@ export default function Workspace({
           {page === "leads" && <Leads leads={leads} campaigns={campaigns} setNotice={setNotice} />}{" "}
           {page === "crm" && <CRM leads={leads} setNotice={setNotice} />}{" "}
           {page === "mensagens" && (
-            <Messages leads={leads} initialLeadId={initialLeadId} setNotice={setNotice} />
+            <Messages leads={leads} campaigns={campaigns} setNotice={setNotice} />
           )}{" "}
           {page === "configuracoes" && <Settings setNotice={setNotice} />}{" "}
         </section>
@@ -564,13 +565,15 @@ function CRM({ leads, setNotice }: { leads: WorkspaceLead[]; setNotice: (value: 
 }
 function Messages({
   leads,
+  campaigns,
   setNotice,
-  initialLeadId,
 }: {
   leads: WorkspaceLead[];
+  campaigns:WorkspaceData["campaigns"];
   setNotice: (v: string) => void;
-  initialLeadId: string | null;
 }) {
+  return <MessageCenter data={{leads,campaigns,activities:[],messages:[]}} setNotice={setNotice}/>;
+  /* Interface anterior removida da execução; mantida temporariamente no histórico do diff.
   const [selectedId, setSelectedId] = useState<string | null>(
     () => leads.find((lead) => lead.id === initialLeadId)?.id ?? null,
   );
@@ -676,7 +679,7 @@ function Messages({
         </article>
       )}
     </div>
-  );
+  ); */
 }
 function Settings({ setNotice }: { setNotice: (v: string) => void }) {
   const [provider, setProvider] = useState("mock");

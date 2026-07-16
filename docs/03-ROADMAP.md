@@ -1,5 +1,9 @@
 # Roadmap
 
+## Sprint 7 — atual
+
+Sistema completo para preparar e organizar mensagens comerciais sem envio externo. A integração com canais permanece posterior e obrigatoriamente isolada por adaptadores.
+
 1. MVP funcional com campanhas, leads, mensagens e CRM simulados.
 2. Providers de busca e configurações de integração, mantendo mocks.
 3. CRM orientado por campanhas e relacionamentos persistentes.

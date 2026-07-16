@@ -4,6 +4,7 @@ import "./globals.css";
 import "./campaigns.css";
 import "./intelligence.css";
 import "./csv-import.css";
+import "./messages.css";
 
 const geist = Geist({ variable: "--font-geist", subsets: ["latin"] });
 const mono = Geist_Mono({ variable: "--font-mono", subsets: ["latin"] });
