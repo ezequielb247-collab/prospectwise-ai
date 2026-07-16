@@ -3,6 +3,8 @@ import { getLeadDetail } from "../../../lib/workspace-data";
 import { requireCurrentUser } from "../../../lib/auth/session";
 import LeadIntelligencePanel from "../../LeadIntelligencePanel";
 import LeadSalesPanel from "../../LeadSalesPanel";
+import DigitalPresencePanel from "../../DigitalPresencePanel";
+import { digitalPresence } from "../../../lib/digital-presence/container";
 import { salesProduct } from "../../../lib/sales-product/container";
 import { messagesForUser } from "../../../lib/messages/container";
 import { followUpForUser } from "../../../lib/follow-up/container";
@@ -31,10 +33,11 @@ export default async function Page({
     );
   const campaign = detail?.campaign;
   const timeline = detail?.timeline ?? [];
-  const [{ tasks, notes }, messageModule, followModule] = await Promise.all([
+  const [{ tasks, notes }, messageModule, followModule, presence] = await Promise.all([
     salesProduct(),
     messagesForUser(),
     followUpForUser(),
+    (await digitalPresence()).get(user.id, id),
   ]);
   const [leadTasks, leadNotes, allMessages, allFollowUps] = await Promise.all([
     tasks.list(user.id),
@@ -117,6 +120,7 @@ export default async function Page({
             </Link>
           </div>
           <LeadIntelligencePanel leadId={lead.id} />
+          <DigitalPresencePanel leadId={lead.id} initial={presence} />
           <LeadSalesPanel
             leadId={lead.id}
             initialFavorite={Boolean(lead.favorite)}

@@ -23,6 +23,9 @@ export class SupabaseIntelligenceRepository
   ) {}
 
   private mapLead(row: Record<string, unknown>): LeadIntelligenceInput {
+    const presence = Array.isArray(row.lead_digital_presence)
+      ? (row.lead_digital_presence[0] as Record<string, unknown> | undefined)
+      : (row.lead_digital_presence as Record<string, unknown> | undefined);
     return {
       id: String(row.id),
       campaignId: String(row.campaign_id),
@@ -30,10 +33,13 @@ export class SupabaseIntelligenceRepository
       category: row.category ? String(row.category) : undefined,
       city: [row.city, row.state].filter(Boolean).join(", "),
       website: row.website ? String(row.website) : null,
+      websiteStatus: (presence?.website_status as LeadIntelligenceInput["websiteStatus"]) ?? undefined,
       phone: row.phone ? String(row.phone) : null,
       address: row.address ? String(row.address) : null,
       rating: row.rating === null ? undefined : Number(row.rating),
       reviews: row.reviews === null ? undefined : Number(row.reviews),
+      hasWhatsapp: presence?.whatsapp_present as boolean | undefined,
+      mapsUrl: presence?.google_maps_url ? String(presence.google_maps_url) : null,
     };
   }
 
@@ -73,7 +79,7 @@ export class SupabaseIntelligenceRepository
   async findLeadById(id: string) {
     const { data, error } = await this.client
       .from("leads")
-      .select("*")
+      .select("*,lead_digital_presence(*)")
       .eq("user_id", this.userId)
       .eq("id", id)
       .maybeSingle();
@@ -87,7 +93,7 @@ export class SupabaseIntelligenceRepository
   ) {
     let query = this.client
       .from("leads")
-      .select("*")
+      .select("*,lead_digital_presence(*)")
       .eq("user_id", this.userId)
       .eq("campaign_id", id)
       .order("created_at");
@@ -111,7 +117,7 @@ export class SupabaseIntelligenceRepository
   async listLeads() {
     const { data, error } = await this.client
       .from("leads")
-      .select("*")
+      .select("*,lead_digital_presence(*)")
       .eq("user_id", this.userId);
     if (error) throw error;
     return (data ?? []).map((row) => this.mapLead(row));

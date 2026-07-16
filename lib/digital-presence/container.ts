@@ -1,0 +1,1 @@
+import"server-only";import{createSupabaseServerClient}from"../supabase/server";import{DigitalPresenceService}from"./service";import{SupabaseDigitalPresenceRepository}from"./supabase-repository";export async function digitalPresence(){return new DigitalPresenceService(new SupabaseDigitalPresenceRepository(await createSupabaseServerClient()))}
