@@ -7,7 +7,7 @@ import {CRM_STORAGE_KEY,createInitialCrmState,moveLead,parseCrmState,serializeCr
 import {campaignSnapshot,MOCK_CAMPAIGNS} from "../lib/mock-campaigns";
 import CampaignMetrics from "./CampaignMetrics";
 const leads=MOCK_LEADS;
-const navigation = [["dashboard","▦","Visão geral"],["campanhas","◉","Campanhas"],["leads","♙","Leads"],["crm","▥","CRM"],["mensagens","✉","Mensagens"],["configuracoes","⚙","Configurações"]];
+const navigation = [["dashboard","▦","Visão geral"],["campanhas","◉","Campanhas"],["leads","♙","Leads"],["radar","◎","Radar"],["crm","▥","CRM"],["mensagens","✉","Mensagens"],["configuracoes","⚙","Configurações"]];
 const subtitles:Record<string,string> = {campanhas:"Crie, acompanhe e controle suas buscas.",leads:"Empresas qualificadas, sem duplicidades.",crm:"Acompanhe cada oportunidade até o fechamento.",mensagens:"Revise e aprove cada contato antes do envio.",configuracoes:"Preferências, segurança e integrações."};
 
 function Badge({children,tone="neutral"}:{children:React.ReactNode;tone?:string}){return <span className={`badge ${tone}`}>{children}</span>}

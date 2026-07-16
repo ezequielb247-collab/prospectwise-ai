@@ -1,0 +1,3 @@
+import {leadIntelligenceService} from "../../../../../lib/intelligence/container";
+export async function GET(_:Request,{params}:{params:Promise<{id:string}>}){const {id}=await params;return Response.json({analysis:await leadIntelligenceService.getAnalysis(id)??null})}
+export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){try{const {id}=await params;const body=await request.json().catch(()=>({})) as {recalculate?:boolean};const analysis=await leadIntelligenceService.analyzeLead(id,{recalculate:Boolean(body.recalculate)});return Response.json({analysis})}catch(error){return Response.json({error:error instanceof Error?error.message:"Falha ao analisar lead."},{status:404})}}
