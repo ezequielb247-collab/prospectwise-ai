@@ -1,5 +1,14 @@
 # Backlog
 
+## Sprint 9
+
+- [x] Tarefas e Agenda comercial.
+- [x] Notas múltiplas e favoritos.
+- [x] Detalhe completo do lead.
+- [x] Pesquisa, dashboard e pipeline ampliados.
+- [x] Auditoria e RLS.
+- [ ] Validar migration no projeto Supabase remoto.
+
 ## Sprint 7 — Sistema de Mensagens Comerciais
 
 - [x] Templates por usuário, tipo e canal.

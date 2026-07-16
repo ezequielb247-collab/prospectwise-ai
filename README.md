@@ -1,5 +1,12 @@
 # ProspectWise AI
 
+## Sprint 9 — CRM comercial interno
+
+- Agenda em `/agenda` com tarefas por lead e campanha.
+- Notas múltiplas, favoritos e visão comercial completa no detalhe do lead.
+- Dashboard, pesquisa global e pipeline enriquecidos somente com dados do Supabase.
+- Aplique `supabase/migrations/202607160007_sprint9_tasks_notes.sql` antes de usar as novas telas.
+
 ## Sprint 7 — mensagens comerciais
 
 Execute `supabase/migrations/202607160005_commercial_messages.sql` no SQL Editor do Supabase. Depois, abra Mensagens e use “Criar templates iniciais”. O sistema prepara, revisa e aprova abordagens, mas não envia mensagens e não utiliza OpenAI, WhatsApp, e-mail ou APIs externas.

@@ -4,9 +4,13 @@
 
 Sistema completo para preparar e organizar mensagens comerciais sem envio externo. A integração com canais permanece posterior e obrigatoriamente isolada por adaptadores.
 
-## Sprint 8 — atual
+## Sprint 8 — concluída
 
 Follow-up e fila controlada para organizar contatos futuros, sem worker, cron ou envio externo.
+
+## Sprint 9 — concluída
+
+CRM comercial interno com tarefas, Agenda, notas múltiplas, favoritos, pesquisa e visão consolidada do lead.
 
 1. MVP funcional com campanhas, leads, mensagens e CRM simulados.
 2. Providers de busca e configurações de integração, mantendo mocks.

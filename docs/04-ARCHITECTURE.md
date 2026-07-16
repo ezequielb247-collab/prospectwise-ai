@@ -45,3 +45,11 @@ UI → API interna → FollowUpService / QueueService → Repository → Supabas
 ```
 
 A fila é exclusivamente organizacional. Ajustes de horário são determinísticos e nenhuma camada possui worker, cron ou integração de envio.
+
+## CRM comercial interno
+
+```text
+Agenda / Lead / Dashboard → API interna → TaskService / NoteService → SalesProductRepository → Supabase + RLS
+```
+
+Tarefas, notas e favoritos são persistidos por usuário. Componentes cliente recebem dados serializáveis e nunca importam Supabase, sessão ou módulos Node.

@@ -1,15 +1,19 @@
 import Link from "next/link";
-import {getLeadDetail} from "../../../lib/workspace-data";
-import {requireCurrentUser} from "../../../lib/auth/session";
+import { getLeadDetail } from "../../../lib/workspace-data";
+import { requireCurrentUser } from "../../../lib/auth/session";
 import LeadIntelligencePanel from "../../LeadIntelligencePanel";
+import LeadSalesPanel from "../../LeadSalesPanel";
+import { salesProduct } from "../../../lib/sales-product/container";
+import { messagesForUser } from "../../../lib/messages/container";
+import { followUpForUser } from "../../../lib/follow-up/container";
 export default async function Page({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const user=await requireCurrentUser(`/leads/${id}`);
-  const detail=await getLeadDetail(user.id,id);
+  const user = await requireCurrentUser(`/leads/${id}`);
+  const detail = await getLeadDetail(user.id, id);
   const lead = detail?.lead;
   if (!lead)
     return (
@@ -26,7 +30,18 @@ export default async function Page({
       </main>
     );
   const campaign = detail?.campaign;
-  const timeline = detail?.timeline??[];
+  const timeline = detail?.timeline ?? [];
+  const [{ tasks, notes }, messageModule, followModule] = await Promise.all([
+    salesProduct(),
+    messagesForUser(),
+    followUpForUser(),
+  ]);
+  const [leadTasks, leadNotes, allMessages, allFollowUps] = await Promise.all([
+    tasks.list(user.id),
+    notes.list(user.id, id),
+    messageModule.repo.list(user.id),
+    followModule.repo.listFollowUps(user.id),
+  ]);
   return (
     <main className="form-page lead-detail-page">
       <Link href="/leads">← Voltar para leads</Link>
@@ -60,17 +75,64 @@ export default async function Page({
                 ? "Site encontrado nos dados disponíveis."
                 : "Nenhum site identificado nos dados disponíveis."}
             </p>
+            <div className="lead-facts">
+              <span>
+                <b>{lead.phone}</b>
+                <small>Telefone</small>
+              </span>
+              <span>
+                <b>{lead.state ?? "—"}</b>
+                <small>Estado</small>
+              </span>
+              <span>
+                <b>{lead.status}</b>
+                <small>Pipeline</small>
+              </span>
+              <span>
+                <b>{lead.rating ?? "—"}</b>
+                <small>Nota</small>
+              </span>
+              <span>
+                <b>{lead.reviews ?? 0}</b>
+                <small>Avaliações</small>
+              </span>
+              <span>
+                <b>
+                  {lead.score >= 70
+                    ? "Alta"
+                    : lead.score >= 40
+                      ? "Média"
+                      : "Baixa"}
+                </b>
+                <small>Prioridade</small>
+              </span>
+            </div>
             <Link
               className="primary full"
               href={`/mensagens?leadId=${lead.id}`}
             >
               Preparar mensagem
             </Link>
-            <Link className="secondary full" href={`/follow-ups?leadId=${lead.id}`}>
+            <Link
+              className="secondary full"
+              href={`/follow-ups?leadId=${lead.id}`}
+            >
               Ver follow-ups
             </Link>
           </div>
           <LeadIntelligencePanel leadId={lead.id} />
+          <LeadSalesPanel
+            leadId={lead.id}
+            initialFavorite={Boolean(lead.favorite)}
+            initialNotes={leadNotes}
+            initialTasks={leadTasks.filter((item) => item.leadId === id)}
+            messageCount={
+              allMessages.filter((item) => item.leadId === id).length
+            }
+            followUpCount={
+              allFollowUps.filter((item) => item.leadId === id).length
+            }
+          />
         </div>
         <article className="panel timeline-panel company-timeline">
           <div className="panel-head">

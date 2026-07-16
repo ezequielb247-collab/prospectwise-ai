@@ -1,20 +1,19 @@
-# Sprint 8 — Follow-up e Fila Controlada
+# Sprint 9 — CRM Comercial Interno
 
-**Status:** Em andamento  
-**Objetivo:** Organizar contatos futuros e mensagens aprovadas sem envio externo.
+**Status:** Concluída  
+**Objetivo:** Consolidar tarefas, agenda, notas, favoritos e visão completa do lead usando apenas dados internos.
 
 ## Entregue
 
-- Follow-ups com criação, reagendamento, conclusão, cancelamento e limites.
-- Fila simulada restrita a mensagens aprovadas.
-- Ajuste por dias úteis, janela e timezone da campanha.
-- Painéis `/follow-ups` e `/fila`, configurações por campanha e agendamento em Mensagens.
-- RLS, relações compostas, auditoria e testes de isolamento.
+- Tarefas comerciais e Agenda.
+- Notas múltiplas e favoritos por lead.
+- Detalhe completo, pesquisa, dashboard e pipeline ampliados.
+- Auditoria, RLS e isolamento por usuário.
 
 ## Ativação
 
-Execute `supabase/migrations/202607160006_follow_up_queue.sql` após a migration da Sprint 7.
+Execute `supabase/migrations/202607160007_sprint9_tasks_notes.sql` após a migration da Sprint 8.
 
 ## Fora do escopo
 
-- WhatsApp, e-mail, APIs, workers, cron e qualquer envio real.
+- APIs externas, WhatsApp, e-mail, OpenAI, workers, cron e qualquer envio real.

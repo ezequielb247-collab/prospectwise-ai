@@ -20,6 +20,7 @@ const navigation = [
   ["dashboard", "▦", "Visão geral"],
   ["campanhas", "◉", "Campanhas"],
   ["leads", "♙", "Leads"],
+  ["agenda", "▣", "Agenda"],
   ["radar", "◎", "Radar"],
   ["crm", "▥", "CRM"],
   ["mensagens", "✉", "Mensagens"],
@@ -30,6 +31,7 @@ const navigation = [
 const subtitles: Record<string, string> = {
   campanhas: "Crie, acompanhe e controle suas buscas.",
   leads: "Empresas qualificadas, sem duplicidades.",
+  agenda: "Organize tarefas comerciais e próximos contatos.",
   crm: "Acompanhe cada oportunidade até o fechamento.",
   mensagens: "Revise e aprove cada contato antes do envio.",
   configuracoes: "Preferências, segurança e integrações.",
@@ -156,7 +158,7 @@ export default function Workspace({
             <input
               id="global-search"
               aria-label="Busca global"
-              placeholder="Buscar leads, campanhas..."
+              placeholder="Buscar leads, campanhas, tarefas..."
               value={globalQuery}
               onChange={(event) => setGlobalQuery(event.target.value)}
               onKeyDown={(event) => {
@@ -192,10 +194,19 @@ export default function Workspace({
                     </small>
                   </Link>
                 ))}
+                {globalResults.tasks.map((item) => (
+                  <Link
+                    key={item.id}
+                    href="/agenda"
+                    onClick={() => setGlobalQuery("")}
+                  >
+                    <b>{item.title}</b>
+                    <small>Tarefa · {item.status}</small>
+                  </Link>
+                ))}
                 {!globalResults.leads.length &&
-                  !globalResults.campaigns.length && (
-                    <span>Nenhum resultado</span>
-                  )}
+                  !globalResults.campaigns.length &&
+                  !globalResults.tasks.length && <span>Nenhum resultado</span>}
               </div>
             )}
           </div>
@@ -259,7 +270,9 @@ export default function Workspace({
           {page === "leads" && (
             <Leads leads={leads} campaigns={campaigns} setNotice={setNotice} />
           )}{" "}
-          {page === "crm" && <CRM leads={leads} setNotice={setNotice} />}{" "}
+          {page === "crm" && (
+            <CRM leads={leads} data={data} setNotice={setNotice} />
+          )}{" "}
           {page === "mensagens" && (
             <Messages
               leads={leads}
@@ -281,11 +294,16 @@ function Dashboard({ data }: { data: WorkspaceData }) {
     ["Campanhas", summary.campaigns, "◉", "blue"],
     ["Empresas", summary.companies, "♙", "violet"],
     ["Leads ativos", summary.active, "↗", "green"],
+    ["Leads favoritos", summary.favorites, "★", "amber"],
+    ["Tarefas hoje", summary.tasksToday, "▣", "blue"],
+    ["Tarefas atrasadas", summary.tasksOverdue, "!", "amber"],
+    ["Tarefas concluídas", summary.tasksCompleted, "✓", "green"],
     ["Interessados", summary.interested, "★", "amber"],
     ["Clientes", summary.clients, "✓", "green"],
     ["Taxa de conversão", `${summary.conversion}%`, "%", "blue"],
     ["Mensagens preparadas", summary.prepared, "✉", "violet"],
     ["Mensagens respondidas", summary.responded, "↩", "amber"],
+    ["Mensagens agendadas", summary.scheduled, "◷", "blue"],
   ];
   return (
     <>
@@ -599,6 +617,7 @@ function Leads({
   const [maxScore, setMaxScore] = useState("");
   const [site, setSite] = useState<"all" | "with" | "without">("all");
   const [phone, setPhone] = useState<"all" | "with" | "without">("all");
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [sort, setSort] = useState<LeadSort>("createdAt");
   const [direction, setDirection] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
@@ -630,7 +649,7 @@ function Leads({
           maxScore: maxScore ? Number(maxScore) : undefined,
           site,
           phone,
-        }),
+        }).filter((lead) => !favoritesOnly || lead.favorite),
         sort,
         direction,
       ),
@@ -646,6 +665,7 @@ function Leads({
       maxScore,
       site,
       phone,
+      favoritesOnly,
       sort,
       direction,
     ],
@@ -687,6 +707,14 @@ function Leads({
             aria-label="Busca rápida de leads"
           />
         </div>
+        <label className="favorite-filter">
+          <input
+            type="checkbox"
+            checked={favoritesOnly}
+            onChange={(event) => setFavoritesOnly(event.target.checked)}
+          />{" "}
+          Somente favoritos
+        </label>
         <select
           aria-label="Filtrar por cidade"
           value={city}
@@ -1056,9 +1084,11 @@ function LeadTable({
 }
 function CRM({
   leads,
+  data,
   setNotice,
 }: {
   leads: WorkspaceLead[];
+  data: WorkspaceData;
   setNotice: (value: string) => void;
 }) {
   const [state, setState] = useState<Record<string, CrmStage>>(() =>
@@ -1135,6 +1165,37 @@ function CRM({
                   <div>
                     <span className="score">{lead.score}</span>
                     <small>{lead.city}</small>
+                  </div>
+                  <div className="crm-card-meta">
+                    <small>
+                      {lead.phone} · {lead.category}
+                    </small>
+                    <small>
+                      {data.campaigns.find(
+                        (item) => item.id === lead.campaignId,
+                      )?.name ?? "Campanha"}
+                    </small>
+                    <small>
+                      Próxima tarefa:{" "}
+                      {(data.tasks ?? [])
+                        .filter(
+                          (item) =>
+                            item.leadId === lead.id &&
+                            !["concluida", "cancelada"].includes(item.status),
+                        )
+                        .sort((a, b) =>
+                          a.scheduledFor.localeCompare(b.scheduledFor),
+                        )[0]?.title ?? "—"}
+                    </small>
+                    <small>
+                      {lead.favorite ? "★ Favorito" : "☆"} ·{" "}
+                      {
+                        (data.activities ?? []).filter(
+                          (item) => item.leadId === lead.id,
+                        ).length
+                      }{" "}
+                      atividades
+                    </small>
                   </div>
                   <label className="move-control">
                     Mover para
