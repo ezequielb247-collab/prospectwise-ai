@@ -82,13 +82,18 @@ export type CommercialMessage = {
   respondedAt: string | null;
   createdAt: string;
   updatedAt: string;
-  warnings: string[];
+  warnings: ValidationIssue[];
   leadName?: string;
   campaignName?: string;
   templateName?: string;
 };
+export type ValidationIssue = {
+  type: "warning" | "blocking_error";
+  message: string;
+  field?: string;
+};
 export type RenderResult = {
   body: string;
-  warnings: string[];
+  warnings: ValidationIssue[];
   templateVersion: number;
 };

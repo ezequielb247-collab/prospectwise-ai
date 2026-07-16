@@ -1,6 +1,14 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { MessageTemplateEngine } from "./template-engine";
 import type { CommercialMessage, MessageContext, Template } from "./types";
+function blockingBodyIssues(body: string) {
+  const issues: string[] = [];
+  if (!body.trim()) issues.push("A mensagem está vazia.");
+  if (/{{\s*[^{}]+\s*}}/.test(body))
+    issues.push("A mensagem contém variável não resolvida.");
+  if (/<\/?(?:script|iframe|object|embed|style)|javascript:/i.test(body))
+    issues.push("A mensagem contém conteúdo inseguro.");
+  return issues;
+}
 export interface MessageRepository {
   context(
     userId: string,
@@ -84,7 +92,6 @@ export class MessageService {
       throw new Error(
         "Já existe uma primeira abordagem. Confirme a duplicação.",
       );
-    const now = new Date().toISOString();
     return this.repo.save(
       userId,
       {
@@ -115,6 +122,29 @@ export class MessageService {
     if (!message) throw new Error("Mensagem não encontrada.");
     if (message.status === "cancelled" && status === "approved")
       throw new Error("Reabra como rascunho antes de aprovar.");
+    if (status === "approved") {
+      const context = await this.repo.context(
+        userId,
+        message.leadId,
+        message.campaignId,
+      );
+      if (!context) throw new Error("Lead não pertence à campanha.");
+      if (
+        context.lead.crmStage === "Opt-out" ||
+        (context.lead.phone &&
+          (await this.repo.isOptedOut(userId, context.lead.phone)))
+      )
+        throw new Error("Lead com opt-out não pode receber mensagem.");
+      if (message.channel === "whatsapp" && !context.lead.phone)
+        throw new Error("Lead sem telefone não pode usar canal WhatsApp.");
+      const errors = [
+        ...blockingBodyIssues(message.body),
+        ...message.warnings
+          .filter((item) => item.type === "blocking_error")
+          .map((item) => item.message),
+      ];
+      if (errors.length) throw new Error(errors[0]);
+    }
     const activities: Record<string, string> = {
       draft: "message_updated",
       prepared: "message_prepared",
@@ -136,6 +166,10 @@ export class MessageService {
     if (!message) throw new Error("Mensagem não encontrada.");
     if (message.status === "approved")
       throw new Error("Volte a mensagem para rascunho antes de editar.");
+    const unsafe = blockingBodyIssues(body).filter((item) =>
+      item.includes("inseguro"),
+    );
+    if (unsafe.length) throw new Error(unsafe[0]);
     return this.repo.update(
       userId,
       id,

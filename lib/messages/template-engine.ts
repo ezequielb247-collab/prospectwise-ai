@@ -1,4 +1,9 @@
-import type { MessageContext, RenderResult, Template } from "./types";
+import type {
+  MessageContext,
+  RenderResult,
+  Template,
+  ValidationIssue,
+} from "./types";
 export const ALLOWED_TEMPLATE_VARIABLES = [
   "empresa",
   "cidade",
@@ -34,17 +39,34 @@ export class MessageTemplateEngine {
       score: context.analysis?.score,
       prioridade: context.analysis?.priority,
     };
-    const warnings: string[] = [];
+    const warnings: ValidationIssue[] = [];
+    if (
+      /<\/?(?:script|iframe|object|embed|style)|javascript:/i.test(
+        template.content,
+      )
+    )
+      warnings.push({
+        type: "blocking_error",
+        message: "O template contém conteúdo inválido ou inseguro.",
+      });
     const body = template.content.replace(
       /{{\s*([^{}]+?)\s*}}/g,
       (_match, key: string) => {
         if (!ALLOWED_TEMPLATE_VARIABLES.includes(key as never)) {
-          warnings.push(`Variável desconhecida: ${key}`);
-          return `[variável desconhecida: ${key}]`;
+          warnings.push({
+            type: "blocking_error",
+            message: `Variável desconhecida: ${key}`,
+            field: key,
+          });
+          return `{{${key}}}`;
         }
         const value = values[key];
         if (value === null || value === undefined || value === "") {
-          warnings.push(`Dado ausente: ${key}`);
+          warnings.push({
+            type: "warning",
+            message: `Dado opcional ausente: ${key}`,
+            field: key,
+          });
           return "[não informado]";
         }
         return sanitize(String(value));
@@ -52,7 +74,13 @@ export class MessageTemplateEngine {
     );
     return {
       body: sanitize(body),
-      warnings: [...new Set(warnings)],
+      warnings: warnings.filter(
+        (item, index, all) =>
+          all.findIndex(
+            (other) =>
+              other.type === item.type && other.message === item.message,
+          ) === index,
+      ),
       templateVersion: template.version,
     };
   }

@@ -66,8 +66,11 @@ class MemoryRepo implements MessageRepository {
     const found = this.contexts.get(lead);
     return found?.lead.campaignId === campaign ? found : undefined;
   }
-  async template(user: string, id: string) {
-    return user === this.owner && id === template.id ? template : undefined;
+  async template(user: string, id: string): Promise<Template | undefined> {
+    if (user !== this.owner) return undefined;
+    if (id === "manual") return { ...template, id, channel: "manual" as const };
+    if (id === "unknown") return { ...template, id, content: "Olá {{codigo}}" };
+    return id === template.id ? template : undefined;
   }
   async message(user: string, id: string) {
     return user === this.owner
@@ -125,12 +128,12 @@ test("variável desconhecida gera aviso", () => {
     ...template,
     content: "{{codigo}}",
   });
-  assert.match(result.warnings[0], /desconhecida/);
+  assert.match(result.warnings[0].message, /desconhecida/);
 });
 test("dado ausente não é inventado", () => {
   const result = new MessageTemplateEngine().render(context(), template);
   assert.match(result.body, /\[não informado\]/);
-  assert.match(result.warnings.join(), /site/);
+  assert.match(result.warnings.map((item) => item.message).join(), /site/);
 });
 test("lead selecionado gera empresa correta", async () => {
   const service = new MessageService(new MemoryRepo());
@@ -269,4 +272,106 @@ test("persistência continua após logout e login", async () => {
   const afterLogin = new MessageService(repo);
   assert.equal((await repo.list("u1")).length, 1);
   assert.ok(afterLogin);
+});
+test("cidade ausente gera warning e não bloqueia aprovação", async () => {
+  const repo = new MemoryRepo();
+  repo.contexts.set("sem-cidade", {
+    ...context("Sem Cidade"),
+    lead: { ...context("Sem Cidade").lead, id: "sem-cidade", city: null },
+  });
+  const service = new MessageService(repo);
+  const item = await service.create("u1", {
+    leadId: "sem-cidade",
+    campaignId: "c1",
+    templateId: "t1",
+    status: "prepared",
+  });
+  assert.ok(
+    item.warnings.some(
+      (issue) => issue.type === "warning" && issue.field === "cidade",
+    ),
+  );
+  assert.equal(
+    (await service.transition("u1", item.id, "approved")).status,
+    "approved",
+  );
+});
+test("site ausente gera warning e não bloqueia aprovação", async () => {
+  const service = new MessageService(new MemoryRepo());
+  const item = await service.create("u1", {
+    leadId: "a",
+    campaignId: "c1",
+    templateId: "t1",
+    status: "prepared",
+  });
+  assert.ok(item.warnings.some((issue) => issue.field === "site"));
+  assert.equal(
+    (await service.transition("u1", item.id, "approved")).status,
+    "approved",
+  );
+});
+test("telefone ausente bloqueia somente canal WhatsApp", async () => {
+  const repo = new MemoryRepo();
+  repo.contexts.set("sem-fone", {
+    ...context("Sem Fone"),
+    lead: { ...context("Sem Fone").lead, id: "sem-fone", phone: null },
+  });
+  const service = new MessageService(repo);
+  await assert.rejects(
+    () =>
+      service.preview("u1", {
+        leadId: "sem-fone",
+        campaignId: "c1",
+        templateId: "t1",
+      }),
+    /telefone/,
+  );
+  const manual = await service.create("u1", {
+    leadId: "sem-fone",
+    campaignId: "c1",
+    templateId: "manual",
+    status: "prepared",
+  });
+  assert.equal(
+    (await service.transition("u1", manual.id, "approved")).status,
+    "approved",
+  );
+});
+test("variável desconhecida ou não resolvida bloqueia aprovação", async () => {
+  const service = new MessageService(new MemoryRepo());
+  const unknown = await service.create("u1", {
+    leadId: "a",
+    campaignId: "c1",
+    templateId: "unknown",
+    status: "draft",
+  });
+  await assert.rejects(
+    () => service.transition("u1", unknown.id, "approved"),
+    /Variável desconhecida|não resolvida/,
+  );
+  const unresolved = await service.create("u1", {
+    leadId: "b",
+    campaignId: "c1",
+    templateId: "t1",
+    body: "Olá {{cidade}}",
+    status: "draft",
+  });
+  await assert.rejects(
+    () => service.transition("u1", unresolved.id, "approved"),
+    /não resolvida/,
+  );
+});
+test("mensagem vazia bloqueia aprovação", async () => {
+  const service = new MessageService(new MemoryRepo());
+  const item = await service.create("u1", {
+    leadId: "a",
+    campaignId: "c1",
+    templateId: "t1",
+    body: "",
+    status: "draft",
+  });
+  await assert.rejects(
+    () => service.transition("u1", item.id, "approved"),
+    /vazia/,
+  );
 });

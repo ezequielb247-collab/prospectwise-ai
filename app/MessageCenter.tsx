@@ -2,7 +2,11 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import type { CommercialMessage, Template } from "../lib/messages/types";
+import type {
+  CommercialMessage,
+  Template,
+  ValidationIssue,
+} from "../lib/messages/types";
 import type { WorkspaceData } from "../lib/workspace-model";
 const labels: Record<string, string> = {
   draft: "Rascunho",
@@ -36,7 +40,7 @@ export default function MessageCenter({
     [leadId, setLeadId] = useState(""),
     [templateId, setTemplateId] = useState(""),
     [body, setBody] = useState(""),
-    [warnings, setWarnings] = useState<string[]>([]),
+    [warnings, setWarnings] = useState<ValidationIssue[]>([]),
     [selected, setSelected] = useState<CommercialMessage>(),
     [checked, setChecked] = useState<string[]>([]),
     [query, setQuery] = useState(""),
@@ -310,7 +314,7 @@ export default function MessageCenter({
               disabled={!campaignId || !leadId || !templateId}
               onClick={() => void preview()}
             >
-              Gerar prévia
+              {body ? "Regenerar prévia" : "Gerar prévia"}
             </button>
             <div className="message-preview">
               <small>Prévia — nenhuma mensagem será enviada</small>
@@ -325,8 +329,15 @@ export default function MessageCenter({
                 }
               />
               {warnings.map((item) => (
-                <span className="message-warning" key={item}>
-                  ⚠ {item}
+                <span
+                  className={
+                    item.type === "blocking_error"
+                      ? "message-error"
+                      : "message-warning"
+                  }
+                  key={`${item.type}-${item.message}`}
+                >
+                  {item.type === "blocking_error" ? "✕" : "⚠"} {item.message}
                 </span>
               ))}
             </div>
@@ -521,8 +532,15 @@ export default function MessageCenter({
               )}
             </div>
             {selected.warnings.map((item) => (
-              <span className="message-warning" key={item}>
-                ⚠ {item}
+              <span
+                className={
+                  item.type === "blocking_error"
+                    ? "message-error"
+                    : "message-warning"
+                }
+                key={`${item.type}-${item.message}`}
+              >
+                {item.type === "blocking_error" ? "✕" : "⚠"} {item.message}
               </span>
             ))}
             <div className="editor-actions">
@@ -559,7 +577,13 @@ export default function MessageCenter({
               )}
               <button
                 className="primary"
-                disabled={selected.status === "approved"}
+                disabled={
+                  selected.status === "approved" ||
+                  !selected.body.trim() ||
+                  selected.warnings.some(
+                    (item) => item.type === "blocking_error",
+                  )
+                }
                 onClick={() =>
                   void patch(selected.id, {
                     action: "transition",

@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { MessageRepository } from "./service";
 import type { CommercialMessage, Template } from "./types";
+import type { ValidationIssue } from "./types";
 const INITIAL_TEMPLATES = [
   {
     name: "Site institucional — primeiro contato",
@@ -82,7 +83,13 @@ const mapMessage = (row: any): CommercialMessage => ({
   respondedAt: row.responded_at,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
-  warnings: Array.isArray(row.warnings) ? row.warnings : [],
+  warnings: Array.isArray(row.warnings)
+    ? row.warnings.map((item: unknown): ValidationIssue =>
+        typeof item === "string"
+          ? { type: "warning", message: item }
+          : (item as ValidationIssue),
+      )
+    : [],
   leadName: row.leads?.name,
   campaignName: row.campaigns?.name,
   templateName: row.message_templates?.name,
@@ -192,21 +199,19 @@ export class SupabaseMessageRepository implements MessageRepository {
     return Boolean(count);
   }
   async activity(userId: string, message: CommercialMessage, type: string) {
-    const { error } = await this.client
-      .from("crm_activities")
-      .insert({
-        user_id: userId,
-        campaign_id: message.campaignId,
-        lead_id: message.leadId,
-        message_id: message.id,
-        type,
-        note: "Atividade de mensagem registrada.",
-        metadata: {
-          status: message.status,
-          channel: message.channel,
-          type: message.type,
-        },
-      });
+    const { error } = await this.client.from("crm_activities").insert({
+      user_id: userId,
+      campaign_id: message.campaignId,
+      lead_id: message.leadId,
+      message_id: message.id,
+      type,
+      note: "Atividade de mensagem registrada.",
+      metadata: {
+        status: message.status,
+        channel: message.channel,
+        type: message.type,
+      },
+    });
     if (error) throw error;
   }
   async save(userId: string, input: any, activity: string) {
@@ -276,16 +281,14 @@ export class SupabaseMessageRepository implements MessageRepository {
   async seedTemplates(userId: string) {
     const existing = await this.templates(userId);
     if (existing.length) return 0;
-    const { error } = await this.client
-      .from("message_templates")
-      .insert(
-        INITIAL_TEMPLATES.map((item) => ({
-          ...item,
-          user_id: userId,
-          active: true,
-          version: 1,
-        })),
-      );
+    const { error } = await this.client.from("message_templates").insert(
+      INITIAL_TEMPLATES.map((item) => ({
+        ...item,
+        user_id: userId,
+        active: true,
+        version: 1,
+      })),
+    );
     if (error) throw error;
     return INITIAL_TEMPLATES.length;
   }
