@@ -310,10 +310,12 @@ function Campaigns({
   setActive: (v: boolean) => void;
   setNotice:(value:string)=>void;
 }) {
+  const [query,setQuery]=useState("");
+  const visibleCampaigns=campaigns.filter(item=>`${item.name} ${item.city}`.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR")));
   async function duplicate(id:string){const response=await fetch(`/api/campaigns/${id}/duplicate`,{method:"POST"});if(response.ok){setNotice("Campanha duplicada com sucesso.");window.location.reload()}else setNotice("Não foi possível duplicar a campanha.")}
   return (
-    <div className="cards-list">
-      {campaigns.map((campaign, index) => {
+    <div className="cards-list"><div className="search list-search">⌕ <input aria-label="Filtrar campanhas" placeholder="Filtrar campanhas..." value={query} onChange={event=>setQuery(event.target.value)}/></div>
+      {visibleCampaigns.map((campaign, index) => {
         const status =
           index === 0 ? (active ? "Ativa" : "Pausada") : campaign.status;
         return (
@@ -480,6 +482,7 @@ function LeadTable({ rows,editable=false,setNotice }: { rows: WorkspaceLead[];ed
 }
 function CRM({ leads, setNotice }: { leads: WorkspaceLead[]; setNotice: (value: string) => void }) {
   const [state, setState] = useState<Record<string, CrmStage>>(() => Object.fromEntries(leads.map((lead) => [lead.id, lead.status])));
+  const [query,setQuery]=useState("");const visibleLeads=leads.filter(lead=>`${lead.name} ${lead.city} ${lead.category}`.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR")));
   function update(id: string, stage: CrmStage) {
     const lead = leads.find((item) => item.id === id);
     if (!lead) return;
@@ -505,9 +508,9 @@ function CRM({ leads, setNotice }: { leads: WorkspaceLead[]; setNotice: (value: 
     if (leads.some((lead) => lead.id === id)) update(id, stage);
   }
   return (
-    <div className="kanban">
+    <><div className="search list-search"><input aria-label="Filtrar CRM" placeholder="Filtrar CRM..." value={query} onChange={event=>setQuery(event.target.value)}/></div><div className="kanban">
       {CRM_STAGES.map((stage, i) => {
-        const items = leads.filter(
+        const items = visibleLeads.filter(
           (lead) => (state[lead.id] ?? lead.status) === stage,
         );
         return (
@@ -556,7 +559,7 @@ function CRM({ leads, setNotice }: { leads: WorkspaceLead[]; setNotice: (value: 
           </section>
         );
       })}
-    </div>
+    </div></>
   );
 }
 function Messages({
@@ -572,6 +575,7 @@ function Messages({
     () => leads.find((lead) => lead.id === initialLeadId)?.id ?? null,
   );
   const [approved, setApproved] = useState(false);
+  const [query,setQuery]=useState("");const visibleLeads=leads.filter(lead=>`${lead.name} ${lead.city} ${lead.category} ${lead.phone}`.toLocaleLowerCase("pt-BR").includes(query.toLocaleLowerCase("pt-BR")));
   const selected = leads.find((lead) => lead.id === selectedId);
   const message = selected ? buildWorkspaceLeadMessage(selected) : "";
   function select(id: string) {
@@ -606,7 +610,8 @@ function Messages({
           </div>
           <Badge tone="warning">Revisão manual</Badge>
         </div>
-        {leads.map((lead, i) => (
+        <div className="search list-search"><input aria-label="Filtrar mensagens por lead" placeholder="Filtrar empresas..." value={query} onChange={event=>setQuery(event.target.value)}/></div>
+        {visibleLeads.map((lead, i) => (
           <button
             className={`message-item ${selectedId === lead.id ? "selected" : ""}`}
             onClick={() => select(lead.id)}
