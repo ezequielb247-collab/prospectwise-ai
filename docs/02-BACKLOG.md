@@ -9,6 +9,19 @@
 - [x] Auditoria e RLS.
 - [ ] Validar migration no projeto Supabase remoto.
 
+## Sprint 9.5
+
+- [x] Preparar build Next.js específico para a Vercel.
+- [x] Definir versão do Node e headers básicos de segurança.
+- [x] Remover dependência de rede das fontes durante o build.
+- [x] Isolar o fallback D1/Cloudflare do runtime Supabase na Vercel.
+- [x] Incluir Agenda, Follow-ups e Fila na renovação de sessão do proxy.
+- [x] Criar checklist de produção e roteiro da primeira campanha real.
+- [ ] Criar ou conectar repositório GitHub privado e enviar a branch `main`.
+- [ ] Configurar as variáveis no projeto Vercel sem expor valores.
+- [ ] Publicar e validar os fluxos na URL pública.
+- [ ] Configurar Site URL e Redirect URLs no Supabase Auth.
+
 ## Sprint 7 — Sistema de Mensagens Comerciais
 
 - [x] Templates por usuário, tipo e canal.

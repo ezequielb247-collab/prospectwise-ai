@@ -1,5 +1,14 @@
 # Changelog
 
+## Sprint 9.5 — Produção e Primeiro Uso Real
+
+- Build Next.js dedicado à Vercel, mantendo o fluxo Vinext local.
+- Runtime Node 22.13 documentado e headers básicos de segurança configurados.
+- Fontes remotas removidas do build para eliminar dependência externa.
+- Fallback D1/Cloudflare isolado do caminho Supabase/Vercel por carregamento tardio.
+- Agenda, Follow-ups e Fila incluídos no proxy de sessão.
+- Checklist de produção e roteiro de primeira campanha real por CSV adicionados.
+
 ## Sprint 9 — Organização Comercial
 
 - CRUD de tarefas com Agenda, prioridades, status e auditoria.

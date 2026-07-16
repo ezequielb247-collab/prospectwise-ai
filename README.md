@@ -1,5 +1,25 @@
 # ProspectWise AI
 
+## Sprint 9.5 — produção
+
+O projeto está preparado para desenvolvimento local com Vinext e para produção na Vercel com Next.js nativo. A implantação exige Node.js 22.13 ou superior e estas variáveis:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+```
+
+Configure os valores apenas no painel da Vercel. Nunca versione `.env` ou `.env.local`. A service role é exclusivamente de servidor; o funcionamento normal da aplicação usa a sessão do usuário e RLS.
+
+Build usado pela Vercel:
+
+```bash
+npm run build:vercel
+```
+
+Consulte [docs/07-PRODUCTION-CHECKLIST.md](docs/07-PRODUCTION-CHECKLIST.md) antes da publicação e [docs/08-FIRST-REAL-CAMPAIGN.md](docs/08-FIRST-REAL-CAMPAIGN.md) para o primeiro uso por CSV. Nenhuma mensagem é enviada automaticamente.
+
 ## Sprint 9 — CRM comercial interno
 
 - Agenda em `/agenda` com tarefas por lead e campanha.

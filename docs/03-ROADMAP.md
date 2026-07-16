@@ -12,6 +12,10 @@ Follow-up e fila controlada para organizar contatos futuros, sem worker, cron ou
 
 Organização comercial com tarefas, Agenda, notas múltiplas, favoritos, histórico ampliado e melhorias no CRM.
 
+## Sprint 9.5 — Produção e Primeiro Uso Real — em andamento
+
+Publicação segura na Vercel, validação do Supabase real e primeiro uso por importação CSV, sem integrações externas ou envio automático.
+
 1. MVP funcional com campanhas, leads, mensagens e CRM simulados.
 2. Providers de busca e configurações de integração, mantendo mocks.
 3. CRM orientado por campanhas e relacionamentos persistentes.

@@ -53,3 +53,13 @@ Agenda / Lead / Dashboard → API interna → TaskService / NoteService → Sale
 ```
 
 Tarefas, notas e favoritos são persistidos por usuário. Componentes cliente recebem dados serializáveis e nunca importam Supabase, sessão ou módulos Node.
+
+## Produção na Vercel
+
+```text
+Navegador → Proxy de sessão → Server Component/API Route → Serviço → Repositório Supabase → PostgreSQL + RLS
+```
+
+O desenvolvimento local continua usando Vinext. A Vercel executa `npm run build:vercel`, que usa o runtime Next.js nativo. Os fallbacks D1/Cloudflare são carregados apenas sob demanda quando o Supabase não está configurado; não entram no caminho de execução da produção.
+
+As chaves públicas do Supabase podem chegar ao navegador. A service role permanece em módulos `server-only` e scripts administrativos, nunca em componentes Client. Em produção, as rotas privadas renovam a sessão pelo proxy e cada página/API ainda valida o usuário no servidor; RLS permanece como segunda barreira.

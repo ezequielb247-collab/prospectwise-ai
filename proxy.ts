@@ -1,6 +1,6 @@
 import {createServerClient} from "@supabase/ssr";
 import {NextResponse,type NextRequest} from "next/server";
 import {hasSupabaseConfig} from "./lib/supabase/config";
-const privatePrefixes=["/dashboard","/campanhas","/leads","/crm","/mensagens","/radar","/configuracoes"];
+const privatePrefixes=["/dashboard","/campanhas","/leads","/crm","/mensagens","/radar","/configuracoes","/agenda","/follow-ups","/fila"];
 export async function proxy(request:NextRequest){if(!hasSupabaseConfig()||!privatePrefixes.some(path=>request.nextUrl.pathname.startsWith(path)))return NextResponse.next();let response=NextResponse.next({request});const supabase=createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,{cookies:{getAll:()=>request.cookies.getAll(),setAll(items){for(const item of items)request.cookies.set(item.name,item.value);response=NextResponse.next({request});for(const item of items)response.cookies.set(item.name,item.value,item.options)}}});const {data:{user}}=await supabase.auth.getUser();if(!user){const url=request.nextUrl.clone();url.pathname="/login";url.searchParams.set("returnTo",request.nextUrl.pathname);return NextResponse.redirect(url)}return response}
-export const config={matcher:["/dashboard/:path*","/campanhas/:path*","/leads/:path*","/crm/:path*","/mensagens/:path*","/radar/:path*","/configuracoes/:path*"]};
+export const config={matcher:["/dashboard/:path*","/campanhas/:path*","/leads/:path*","/crm/:path*","/mensagens/:path*","/radar/:path*","/configuracoes/:path*","/agenda/:path*","/follow-ups/:path*","/fila/:path*"]};
