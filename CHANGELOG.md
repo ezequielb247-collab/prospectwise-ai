@@ -14,6 +14,8 @@
 - Diagnóstico seguro do preview agora registra metadados e exceção no servidor, expondo nome, mensagem e stack somente em desenvolvimento.
 - Endpoint de preview aceita o JSON existente e `multipart/form-data`, sem registrar conteúdo do CSV.
 - Endpoint de commit CSV agora preserva a resposta genérica em produção e registra diagnóstico estruturado de `PostgrestError` e `Error` somente no servidor.
+- RPC atômica `import_csv_leads` restaurada pela migration `202607160008_fix_import_csv_rpc.sql` e validada no Supabase real.
+- Importador CSV validado em produção: preview concluído, commit HTTP 200 e uma empresa persistida sem erros.
 
 ## Sprint 9 — Organização Comercial
 

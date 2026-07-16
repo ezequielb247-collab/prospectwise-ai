@@ -24,4 +24,5 @@ Não conectar APIs externas, OpenAI, WhatsApp, Meta, Evolution, Twilio, e-mail, 
 - Rotas privadas e headers de segurança validados sem sessão.
 - Correção de produção do preview CSV: consulta mínima para deduplicação e diagnóstico seguro no servidor.
 - Diagnóstico do commit CSV ampliado sem alterar regras, validações, RLS, schema ou importação.
+- Migration `202607160008_fix_import_csv_rpc.sql` aplicada e importador CSV validado no ambiente real: preview OK, commit HTTP 200 e uma empresa importada sem erros.
 - Validação autenticada e configuração do Supabase Auth aguardam acesso ao painel e rotação preventiva da service role.
