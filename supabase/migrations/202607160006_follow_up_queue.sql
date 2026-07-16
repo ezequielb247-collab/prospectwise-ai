@@ -1,0 +1,21 @@
+alter table public.campaigns add column if not exists follow_up_enabled boolean not null default false;
+alter table public.campaigns add column if not exists max_follow_up_attempts integer not null default 2;
+alter table public.campaigns add column if not exists follow_up_delay_days_1 integer not null default 3;
+alter table public.campaigns add column if not exists follow_up_delay_days_2 integer not null default 7;
+alter table public.campaigns add column if not exists follow_up_delay_days_3 integer not null default 14;
+alter table public.campaigns add column if not exists allowed_weekdays jsonb not null default '[1,2,3,4,5]'::jsonb;
+alter table public.campaigns add column if not exists send_window_start time not null default '09:00';
+alter table public.campaigns add column if not exists send_window_end time not null default '17:00';
+alter table public.campaigns add column if not exists timezone text not null default 'America/Sao_Paulo';
+alter table public.campaigns add column if not exists max_queue_retries integer not null default 3;
+
+create table if not exists public.follow_ups(id uuid primary key default gen_random_uuid(),user_id uuid not null references auth.users(id) on delete cascade,campaign_id uuid not null,lead_id uuid not null,message_id uuid,type text not null,status text not null default 'pending',attempt_number integer not null,scheduled_for timestamptz not null,completed_at timestamptz,cancelled_at timestamptz,reason text,notes text,created_at timestamptz not null default now(),updated_at timestamptz not null default now(),unique(id,user_id),foreign key(campaign_id,user_id) references public.campaigns(id,user_id),foreign key(lead_id,user_id) references public.leads(id,user_id),foreign key(message_id,user_id) references public.messages(id,user_id) on delete set null (message_id),check(type in ('first_follow_up','second_follow_up','third_follow_up','manual','meeting_reminder','proposal_reminder')),check(status in ('pending','due','completed','cancelled','skipped','blocked')),check(attempt_number>0));
+create table if not exists public.message_queue(id uuid primary key default gen_random_uuid(),user_id uuid not null references auth.users(id) on delete cascade,campaign_id uuid not null,lead_id uuid not null,message_id uuid not null,follow_up_id uuid,channel text not null,status text not null default 'pending',scheduled_for timestamptz not null,available_after timestamptz not null,locked_at timestamptz,processed_at timestamptz,failure_reason text,retry_count integer not null default 0,created_at timestamptz not null default now(),updated_at timestamptz not null default now(),unique(id,user_id),foreign key(campaign_id,user_id) references public.campaigns(id,user_id),foreign key(lead_id,user_id) references public.leads(id,user_id),foreign key(message_id,user_id) references public.messages(id,user_id),foreign key(follow_up_id,user_id) references public.follow_ups(id,user_id) on delete set null (follow_up_id),check(channel in ('whatsapp','email','manual')),check(status in ('pending','scheduled','ready','processing','completed','failed','cancelled','blocked')),check(retry_count between 0 and 10));
+create unique index if not exists follow_ups_active_unique on public.follow_ups(user_id,lead_id,type,attempt_number) where status in ('pending','due');
+create unique index if not exists message_queue_active_unique on public.message_queue(user_id,message_id) where status in ('pending','scheduled','ready','processing');
+create index if not exists follow_ups_panel_idx on public.follow_ups(user_id,status,scheduled_for);
+create index if not exists queue_panel_idx on public.message_queue(user_id,status,scheduled_for);
+alter table public.follow_ups enable row level security;alter table public.message_queue enable row level security;
+drop policy if exists own_rows on public.follow_ups;create policy own_rows on public.follow_ups for all using(user_id=auth.uid()) with check(user_id=auth.uid());
+drop policy if exists own_rows on public.message_queue;create policy own_rows on public.message_queue for all using(user_id=auth.uid()) with check(user_id=auth.uid());
+revoke all on public.follow_ups,public.message_queue from anon;grant select,insert,update,delete on public.follow_ups,public.message_queue to authenticated,service_role;
