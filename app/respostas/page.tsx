@@ -1,0 +1,1 @@
+import{requireCurrentUser}from"../../lib/auth/session";import ResponseAssistant from"../ResponseAssistant";export default async function Page(){await requireCurrentUser("/respostas");return <main className="form-page"><ResponseAssistant/></main>}
