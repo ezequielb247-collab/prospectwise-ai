@@ -49,7 +49,7 @@ test("sequences futuras recebem permissão somente quando pertencem às tabelas 
 });
 test("Dashboard registra tabela, operação, código e presença da sessão sem segredos", () => {
   for (const table of ["campaigns", "leads", "messages"])
-    assert.match(workspace, new RegExp(`table:\"${table}\"`));
+    assert.match(workspace, new RegExp(`table:\\s*\"${table}\"`));
   assert.doesNotMatch(
     readFileSync("lib/safe-db-log.ts", "utf8"),
     /token|key|authorization/i,
