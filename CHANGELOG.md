@@ -1,10 +1,12 @@
 # Changelog
 
-## Sprint 9 — CRM Comercial Interno
+## Sprint 9 — Organização Comercial
 
 - CRUD de tarefas com Agenda, prioridades, status e auditoria.
 - Notas múltiplas e favoritos persistidos por lead.
 - Dashboard, pesquisa global, pipeline e detalhes do lead ampliados.
+- Histórico comercial ampliado com atividades de tarefas, notas e favoritos.
+- Cartões e filtros do CRM enriquecidos para apoiar a rotina comercial.
 - Migration com RLS, índices e isolamento por usuário, sem integrações externas.
 
 ## Sprint 7 — Sistema de Mensagens Comerciais

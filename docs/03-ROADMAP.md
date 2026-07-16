@@ -8,9 +8,9 @@ Sistema completo para preparar e organizar mensagens comerciais sem envio extern
 
 Follow-up e fila controlada para organizar contatos futuros, sem worker, cron ou envio externo.
 
-## Sprint 9 — concluída
+## Sprint 9 — Organização Comercial — concluída
 
-CRM comercial interno com tarefas, Agenda, notas múltiplas, favoritos, pesquisa e visão consolidada do lead.
+Organização comercial com tarefas, Agenda, notas múltiplas, favoritos, histórico ampliado e melhorias no CRM.
 
 1. MVP funcional com campanhas, leads, mensagens e CRM simulados.
 2. Providers de busca e configurações de integração, mantendo mocks.

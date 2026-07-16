@@ -1,4 +1,4 @@
-# Sprint 9 — CRM Comercial Interno
+# Sprint 9 — Organização Comercial
 
 **Status:** Concluída  
 **Objetivo:** Consolidar tarefas, agenda, notas, favoritos e visão completa do lead usando apenas dados internos.
@@ -12,7 +12,7 @@
 
 ## Ativação
 
-Execute `supabase/migrations/202607160007_sprint9_tasks_notes.sql` após a migration da Sprint 8.
+A migration `202607160007_sprint9_tasks_notes.sql` foi aplicada e os fluxos foram validados no Supabase.
 
 ## Fora do escopo
 
