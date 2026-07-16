@@ -1,1 +1,16 @@
-import Link from"next/link";import{requireCurrentUser}from"../../lib/auth/session";import{proposals}from"../../lib/proposals/container";export default async function Page(){const user=await requireCurrentUser("/propostas"),items=await(await proposals()).list(user.id);return <main className="form-page"><div className="panel-head"><div><h1>Propostas comerciais</h1><p>Criação e envio exclusivamente manuais.</p></div></div>{items.map(p=><article className="panel" key={p.id}><h3>{p.title}</h3><p>{p.leadName} · {p.status}</p><b>{p.price===null?"Preço não informado":p.price.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</b><br/><Link href={`/propostas/${p.id}`}>Abrir proposta →</Link></article>)}{!items.length&&<article className="panel empty"><h3>Nenhuma proposta</h3><p>Abra um lead qualificado para preparar uma proposta.</p></article>}</main>}
+import Link from "next/link";
+import { requireCurrentUser } from "../../lib/auth/session";
+import { proposals } from "../../lib/proposals/container";
+import { EmptyState, SectionCard, StatusBadge, WorkspaceShell } from "../ui/interface";
+
+export default async function Page() {
+  const user = await requireCurrentUser("/propostas");
+  const items = await (await proposals()).list(user.id);
+  return <WorkspaceShell page="propostas" title="Propostas comerciais" subtitle="Criação e envio exclusivamente manuais.">
+    {items.length ? <div className="commercial-card-grid">{items.map(proposal => <SectionCard key={proposal.id}>
+      <div className="panel-head"><div><h3>{proposal.title}</h3><p>{proposal.leadName}</p></div><StatusBadge status={proposal.status} /></div>
+      <strong>{proposal.price === null ? "Preço não informado" : proposal.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>
+      <Link className="secondary" href={`/propostas/${proposal.id}`}>Abrir proposta</Link>
+    </SectionCard>)}</div> : <EmptyState title="Nenhuma proposta" description="Abra um lead qualificado para preparar uma proposta." />}
+  </WorkspaceShell>;
+}

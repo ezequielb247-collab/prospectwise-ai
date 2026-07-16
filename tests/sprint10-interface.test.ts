@@ -60,3 +60,34 @@ test("primitivas client-safe não importam módulos server-only", () => {
     assert.doesNotMatch(source, /server-only|next\/headers|lib\/supabase\/server|lib\/auth\/session/);
   }
 });
+
+test("Radar usa o workspace global e as barras do design system", () => {
+  const source = read("app/radar/page.tsx");
+  assert.match(source, /<WorkspaceShell page="radar"/);
+  assert.match(source, /<FilterBar>/);
+  assert.match(source, /<BulkActionBar>/);
+  assert.doesNotMatch(source, /className="form-page"|className="filters"|className="panel bulk-actions"/);
+});
+
+test("Radar separa ações e não apresenta texto colado sem seleção", () => {
+  const source = read("app/radar/page.tsx");
+  assert.match(source, /Selecione oportunidades para executar ações em massa/);
+  assert.match(source, /Selecionar filtrados/);
+  assert.match(source, /Adicionar à lista/);
+  assert.match(source, /Criar mensagens/);
+  assert.match(source, /Limpar seleção/);
+  assert.match(source, /selected\.length > 0/);
+});
+
+test("checkbox do Radar possui id e label associado", () => {
+  const source = read("app/radar/page.tsx");
+  assert.match(source, /const checkboxId = `radar-lead-\${lead\.id}`/);
+  assert.match(source, /id=\{checkboxId\}/);
+  assert.match(source, /htmlFor=\{checkboxId\}/);
+});
+
+test("rotas comerciais auditadas usam o mesmo WorkspaceShell", () => {
+  for (const route of ["app/listas/page.tsx", "app/prospeccao/page.tsx", "app/propostas/page.tsx", "app/respostas/page.tsx"]) {
+    assert.match(read(route), /WorkspaceShell/, route);
+  }
+});

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 type Children = { children: ReactNode; className?: string };
 
@@ -49,4 +50,25 @@ export function StatusBadge({ status, tone = "neutral" }: { status: string; tone
 
 export function InlineAlert({ tone, children }: { tone: "success" | "warning" | "error" | "info"; children: ReactNode }) {
   return <div className={`ui-alert ${tone}`} role={tone === "error" ? "alert" : "status"}>{children}</div>;
+}
+
+const WORKSPACE_NAVIGATION = [
+  ["dashboard", "Visão geral"], ["campanhas", "Campanhas"], ["leads", "Leads"],
+  ["agenda", "Agenda"], ["radar", "Radar"], ["crm", "CRM"], ["mensagens", "Mensagens"],
+  ["follow-ups", "Follow-ups"], ["fila", "Fila"], ["listas", "Listas"],
+  ["prospeccao", "Prospecção"], ["propostas", "Propostas"], ["respostas", "Respostas"],
+  ["configuracoes", "Configurações"],
+] as const;
+
+export function WorkspaceShell({ page, title, subtitle, actions, children }: { page: string; title: string; subtitle: string; actions?: ReactNode; children: ReactNode }) {
+  return <div className="app workspace-shell">
+    <aside className="sidebar">
+      <Link href="/dashboard" className="brand"><span className="brand-mark">P</span>ProspectWise <b>AI</b></Link>
+      <nav aria-label="Navegação principal">{WORKSPACE_NAVIGATION.map(([href, label]) => <Link key={href} href={`/${href}`} className={page === href ? "active" : ""}><span aria-hidden="true">◇</span>{label}</Link>)}</nav>
+    </aside>
+    <main>
+      <header><div className="search"><span aria-hidden="true">⌕</span><input aria-label="Busca global" placeholder="Buscar leads, campanhas, tarefas..." /></div><div className="header-actions"><Link className="primary compact" href="/campanhas/nova">＋ Nova campanha</Link></div></header>
+      <section className="content"><PageHeader title={title} subtitle={subtitle} actions={actions} />{children}</section>
+    </main>
+  </div>;
 }
