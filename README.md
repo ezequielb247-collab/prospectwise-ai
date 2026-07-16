@@ -11,6 +11,7 @@ MVP de um assistente de prospecção comercial para pesquisar, qualificar e orga
 - Mensagens personalizadas editáveis, opt-out explícito e aprovação manual.
 - Fila simulada com limite diário, intervalo e horário comercial.
 - CRM em kanban, configurações e tema claro/escuro.
+- CRM orientado por campanhas, com métricas isoladas, histórico da campanha e timeline por empresa.
 - Interfaces substituíveis `LeadProvider` e `WhatsAppProvider`.
 - Busca de empresas via `SearchCompaniesService`, com providers Mock e Outscraper, deduplicação, métricas de importação e paginação.
 
@@ -37,6 +38,8 @@ npm run build
 ## Dados e segurança
 
 O esquema relacional em `db/schema.ts` inclui perfis, campanhas, leads, análises, mensagens, tentativas, conversas, atividades de CRM, descadastros e preferências. Todas as entidades comerciais possuem `user_id` e índices de isolamento. Para produção, aplique políticas RLS equivalentes no Supabase e valide o usuário em todas as ações do servidor.
+
+Empresas exigem `campaign_id`; mensagens exigem simultaneamente `lead_id` e `campaign_id`. Mudanças de etapa, criação de campanha, importações e mensagens aprovadas são persistidas e registradas em `campaign_events`. A migration `0002_sparkling_living_tribunal.sql` reassocia dados antigos antes de tornar os relacionamentos obrigatórios e inclui registros demonstrativos consistentes.
 
 Chaves nunca devem ser expostas no navegador. Copie `.env.example` para `.env.local` somente quando for ativar uma integração. Antes disso serão necessárias: projeto Supabase, chave OpenAI, conta/projeto Google Places ou Outscraper e uma conta WhatsApp Business aprovada pela Meta. O adaptador real permanece bloqueado até aprovação manual.
 

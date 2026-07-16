@@ -1,0 +1,6 @@
+import {z} from "zod";
+import {getDb} from "../../../../db";
+import {campaignEvents,crmActivities,leads} from "../../../../db/schema";
+import {and,eq} from "drizzle-orm";
+const schema=z.object({leadId:z.string().min(1),campaignId:z.string().min(1),stage:z.string().min(1)});
+export async function POST(request:Request){try{const input=schema.parse(await request.json());const db=getDb();const now=new Date();await db.transaction(async tx=>{await tx.update(leads).set({crmStage:input.stage,updatedAt:now}).where(and(eq(leads.id,input.leadId),eq(leads.campaignId,input.campaignId),eq(leads.userId,"demo-user")));await tx.insert(crmActivities).values({id:crypto.randomUUID(),userId:"demo-user",campaignId:input.campaignId,leadId:input.leadId,type:"stage_changed",note:`Etapa alterada para ${input.stage}`,createdAt:now,updatedAt:now});await tx.insert(campaignEvents).values({id:crypto.randomUUID(),userId:"demo-user",campaignId:input.campaignId,leadId:input.leadId,type:"stage_changed",title:"Etapa do CRM atualizada",description:`Lead movido para ${input.stage}.`,createdAt:now,updatedAt:now})});return Response.json({ok:true})}catch(error){return Response.json({error:error instanceof Error?error.message:"Falha ao salvar etapa."},{status:500})}}

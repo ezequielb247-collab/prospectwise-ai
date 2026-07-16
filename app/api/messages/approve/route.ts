@@ -1,0 +1,5 @@
+import {z} from "zod";
+import {getDb} from "../../../../db";
+import {campaignEvents,messages} from "../../../../db/schema";
+const schema=z.object({leadId:z.string().min(1),campaignId:z.string().min(1),body:z.string().min(10)});
+export async function POST(request:Request){try{const input=schema.parse(await request.json());const db=getDb();const now=new Date();const messageId=crypto.randomUUID();await db.transaction(async tx=>{await tx.insert(messages).values({id:messageId,userId:"demo-user",leadId:input.leadId,campaignId:input.campaignId,body:input.body,status:"Preparada",attempts:0,approvedAt:now,createdAt:now,updatedAt:now});await tx.insert(campaignEvents).values({id:crypto.randomUUID(),userId:"demo-user",campaignId:input.campaignId,leadId:input.leadId,messageId,type:"message_prepared",title:"Mensagem preparada",description:"Mensagem aprovada e vinculada à campanha.",createdAt:now,updatedAt:now})});return Response.json({ok:true,messageId})}catch(error){return Response.json({error:error instanceof Error?error.message:"Falha ao salvar mensagem."},{status:500})}}
