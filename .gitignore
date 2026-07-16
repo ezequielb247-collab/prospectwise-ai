@@ -42,3 +42,5 @@ next-env.d.ts
 /.wrangler/
 /outputs/
 /work/
+dev-output.log
+dev-error.log
