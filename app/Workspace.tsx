@@ -7,6 +7,7 @@ import { CRM_STAGES, type CrmStage } from "../lib/crm";
 import { type WorkspaceData, type WorkspaceLead } from "../lib/workspace-model";
 import { logoutAction } from "./auth/actions";
 import MessageCenter from "./MessageCenter";
+import BulkLeadActions from "./BulkLeadActions";
 import {
   dashboardMetrics,
   exportLeadsCsv,
@@ -831,6 +832,7 @@ function Leads({
           <button onClick={() => exportCsv("campaign")}>Campanha atual</button>
         </details>
       </div>
+      <BulkLeadActions leads={paged.items} campaigns={campaigns} />
       <LeadTable rows={paged.items} editable setNotice={setNotice} />
       <div className="pagination table-pagination">
         <span>{paged.total} registros</span>

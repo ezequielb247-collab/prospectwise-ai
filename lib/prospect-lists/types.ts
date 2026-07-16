@@ -1,0 +1,2 @@
+export type ProspectList={id:string;userId:string;campaignId:string|null;name:string;description:string|null;createdAt:string;updatedAt:string;items?:ProspectListItem[];count?:number;averageScore?:number|null;contacts?:number};
+export type ProspectListItem={id:string;userId:string;listId:string;leadId:string;position:number|null;createdAt:string;leadName?:string;phone?:string|null;score?:number|null};

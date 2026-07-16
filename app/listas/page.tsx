@@ -1,0 +1,1 @@
+import{requireCurrentUser}from"../../lib/auth/session";import{prospectLists}from"../../lib/prospect-lists/container";import ProspectListsPanel from"../ProspectListsPanel";export default async function Page(){const user=await requireCurrentUser("/listas"),initial=await(await prospectLists()).list(user.id);return <main><ProspectListsPanel initial={initial}/></main>}

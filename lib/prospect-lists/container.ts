@@ -1,0 +1,1 @@
+import "server-only";import{createSupabaseServerClient}from"../supabase/server";import{ProspectListService}from"./service";import{SupabaseProspectListRepository}from"./supabase-repository";export async function prospectLists(){return new ProspectListService(new SupabaseProspectListRepository(await createSupabaseServerClient()))}
