@@ -1,0 +1,1 @@
+import{requireCurrentUser}from"../../lib/auth/session";import{getWorkspaceData}from"../../lib/workspace-data";import ManualProspectingPanel from"../ManualProspectingPanel";export default async function Page(){const user=await requireCurrentUser("/prospeccao"),data=await getWorkspaceData(user.id);return <main><ManualProspectingPanel data={data}/></main>}

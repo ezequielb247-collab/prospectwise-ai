@@ -1,0 +1,1 @@
+import"server-only";import{createSupabaseServerClient}from"../supabase/server";import{ManualProspectingService}from"./service";import{SupabaseManualProspectingRepository}from"./supabase-repository";export async function manualProspecting(){return new ManualProspectingService(new SupabaseManualProspectingRepository(await createSupabaseServerClient()))}
