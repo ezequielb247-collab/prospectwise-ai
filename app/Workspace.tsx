@@ -1166,6 +1166,12 @@ function CRM({
                     <span className="score">{lead.score}</span>
                     <small>{lead.city}</small>
                   </div>
+                  {lead.classification && (
+                    <div>
+                      <span className="badge success">{lead.classification}</span>
+                      <small>Prioridade {lead.priority}</small>
+                    </div>
+                  )}
                   <div className="crm-card-meta">
                     <small>
                       {lead.phone} · {lead.category}

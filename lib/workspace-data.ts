@@ -76,7 +76,7 @@ export async function getWorkspaceData(userId: string): Promise<WorkspaceData> {
       .limit(50),
     supabase
       .from("lead_analyses")
-      .select("lead_id,score")
+      .select("lead_id,score,classification,priority,recommended_services,reasons")
       .eq("user_id", userId),
     supabase
       .from("tasks")
@@ -143,8 +143,8 @@ export async function getWorkspaceData(userId: string): Promise<WorkspaceData> {
       analysisError ??
       taskError
     );
-  const scores = new Map(
-    (analysisRows ?? []).map((item) => [item.lead_id, item.score]),
+  const analyses = new Map(
+    (analysisRows ?? []).map((item) => [item.lead_id, item]),
   );
   const leads: WorkspaceLead[] = (leadRows ?? []).map((lead, index) => ({
     id: lead.id,
@@ -154,7 +154,9 @@ export async function getWorkspaceData(userId: string): Promise<WorkspaceData> {
     category: lead.category ?? "Sem categoria",
     city: lead.city ?? "",
     state: lead.state ?? undefined,
-    score: scores.get(lead.id) ?? 0,
+    score: analyses.get(lead.id)?.score ?? 0,
+    classification: analyses.get(lead.id)?.classification,
+    priority: analyses.get(lead.id)?.priority,
     status: lead.crm_stage as CrmStage,
     site: Boolean(lead.website),
     website: lead.website,
@@ -171,8 +173,12 @@ export async function getWorkspaceData(userId: string): Promise<WorkspaceData> {
       .join("")
       .toUpperCase(),
     tone: ["mint", "violet", "amber", "blue", "rose"][index % 5],
-    analysis: "Execute a análise para qualificar esta empresa.",
-    services: [],
+    analysis:
+      analyses.get(lead.id)?.reasons?.[0] ??
+      "A análise automática ainda não foi concluída.",
+    services: (analyses.get(lead.id)?.recommended_services ?? [])
+      .map((service: { name?: string }) => service.name)
+      .filter(Boolean) as string[],
   }));
   return {
     leads,

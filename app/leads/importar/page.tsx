@@ -6,6 +6,10 @@ import type {
   CsvField,
   CsvPreview,
 } from "../../../lib/csv-import/types";
+import {
+  analyzeImportedLeads,
+  type AnalysisProgress,
+} from "../../../lib/intelligence/client-batch";
 const MAX_SIZE = 2 * 1024 * 1024;
 const fields: Array<{ value: CsvField | "ignore"; label: string }> = [
   { value: "ignore", label: "Ignorar coluna" },
@@ -40,6 +44,7 @@ export default function CsvImportPage() {
   const [result, setResult] = useState<ImportResult>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [analysisProgress, setAnalysisProgress] = useState<AnalysisProgress>();
   useEffect(() => {
     fetch("/api/campaigns")
       .then((response) => response.json())
@@ -115,6 +120,7 @@ export default function CsvImportPage() {
     if (!campaignId || !preview) return;
     setLoading(true);
     setError("");
+    setAnalysisProgress(undefined);
     try {
       const response = await fetch("/api/import/csv/commit", {
         method: "POST",
@@ -124,6 +130,7 @@ export default function CsvImportPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       setResult(data);
+      await analyzeImportedLeads(campaignId, data.leadIds, setAnalysisProgress);
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : "Falha ao importar CSV.",
@@ -131,14 +138,6 @@ export default function CsvImportPage() {
     } finally {
       setLoading(false);
     }
-  }
-  async function analyzeAll() {
-    setLoading(true);
-    const response = await fetch(`/api/intelligence/campaigns/${campaignId}`, {
-      method: "POST",
-    });
-    setLoading(false);
-    if (!response.ok) setError("Não foi possível analisar os leads agora.");
   }
   return (
     <main className="form-page csv-import-page">
@@ -360,14 +359,21 @@ export default function CsvImportPage() {
                 {result.duplicates} duplicadas e {result.invalid} inválidas não
                 foram importadas.
               </p>
+              {analysisProgress && (
+                <div className="analysis-progress" aria-live="polite">
+                  <div className="progress-row">
+                    <b>Análise automática</b>
+                    <span>{analysisProgress.percentage}%</span>
+                  </div>
+                  <div className="bar">
+                    <span style={{ width: `${analysisProgress.percentage}%` }} />
+                  </div>
+                  <small>
+                    {analysisProgress.processed} de {analysisProgress.total} leads analisados
+                  </small>
+                </div>
+              )}
               <div className="post-import-actions">
-                <button
-                  className="secondary"
-                  disabled={loading}
-                  onClick={() => void analyzeAll()}
-                >
-                  Analisar todos os leads
-                </button>
                 <Link
                   className="primary"
                   href={`/radar?campaignId=${campaignId}`}

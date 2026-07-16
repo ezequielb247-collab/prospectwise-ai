@@ -8,6 +8,8 @@ export type WorkspaceLead = {
   city: string;
   state?: string;
   score: number;
+  classification?: string;
+  priority?: string;
   status: CrmStage;
   site: boolean;
   website?: string | null;
