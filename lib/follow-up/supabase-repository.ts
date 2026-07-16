@@ -326,6 +326,45 @@ export class SupabaseFollowUpRepository implements FollowUpRepository {
       .eq("user_id", userId)
       .order("scheduled_for");
     if (error) throw error;
-    return (data ?? []).map(queue);
+    const items = (data ?? []).map(queue);
+    const campaignIds = [...new Set(items.map((item) => item.campaignId))];
+    if (!campaignIds.length) return items;
+    const { data: campaigns, error: campaignError } = await this.client
+      .from("campaigns")
+      .select("id,status")
+      .eq("user_id", userId)
+      .in("id", campaignIds);
+    if (campaignError) throw campaignError;
+    const statuses = new Map(
+      (campaigns ?? []).map((campaign) => [campaign.id, campaign.status]),
+    );
+    return items.map((item) =>
+      ["paused", "Pausada"].includes(statuses.get(item.campaignId) ?? "") &&
+      ["pending", "scheduled", "ready", "processing"].includes(item.status)
+        ? {
+            ...item,
+            status: "blocked" as const,
+            failureReason: "Campanha pausada; item preservado.",
+          }
+        : item,
+    );
+  }
+  async queueCampaignStatus(userId: string, id: string) {
+    const { data: item, error } = await this.client
+      .from("message_queue")
+      .select("campaign_id")
+      .eq("user_id", userId)
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw error;
+    if (!item) return;
+    const { data: campaign, error: campaignError } = await this.client
+      .from("campaigns")
+      .select("status")
+      .eq("user_id", userId)
+      .eq("id", item.campaign_id)
+      .maybeSingle();
+    if (campaignError) throw campaignError;
+    return campaign?.status;
   }
 }

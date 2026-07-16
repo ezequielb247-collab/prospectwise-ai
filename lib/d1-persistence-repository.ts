@@ -1,6 +1,138 @@
 import "server-only";
-import {and,eq} from "drizzle-orm";
-import {getDb} from "../db";
-import {campaignEvents,campaigns,crmActivities,leads,messages} from "../db/schema";
-import type {PersistentRepository} from "./persistence-service";
-export class D1PersistenceRepository implements PersistentRepository{constructor(private readonly userId:string){}async createCampaign(input:Parameters<PersistentRepository["createCampaign"]>[0]){const db=getDb(),now=new Date(),id=crypto.randomUUID();await db.transaction(async tx=>{await tx.insert(campaigns).values({id,userId:this.userId,name:input.name,city:input.city,state:input.state,segment:input.segment,companyLimit:input.companyLimit,services:JSON.stringify(input.services),dailyLimit:input.dailyLimit,sendStart:"09:00",sendEnd:"18:00",status:"draft",createdAt:now,updatedAt:now});await tx.insert(campaignEvents).values({id:crypto.randomUUID(),userId:this.userId,campaignId:id,type:"campaign_created",title:"Campanha criada",createdAt:now,updatedAt:now})});return id}async moveLead(input:Parameters<PersistentRepository["moveLead"]>[0]){const db=getDb(),now=new Date();await db.transaction(async tx=>{const changed=await tx.update(leads).set({crmStage:input.stage,updatedAt:now}).where(and(eq(leads.id,input.leadId),eq(leads.campaignId,input.campaignId),eq(leads.userId,this.userId))).returning({id:leads.id});if(!changed.length)throw new Error("Lead não encontrado.");await tx.insert(crmActivities).values({id:crypto.randomUUID(),userId:this.userId,campaignId:input.campaignId,leadId:input.leadId,type:"stage_changed",note:`Etapa alterada para ${input.stage}`,createdAt:now,updatedAt:now})})}async prepareMessage(input:Parameters<PersistentRepository["prepareMessage"]>[0]){const db=getDb(),now=new Date(),id=crypto.randomUUID();const owned=await db.select({id:leads.id}).from(leads).where(and(eq(leads.id,input.leadId),eq(leads.campaignId,input.campaignId),eq(leads.userId,this.userId))).limit(1);if(!owned.length)throw new Error("Lead não encontrado.");await db.insert(messages).values({id,userId:this.userId,leadId:input.leadId,campaignId:input.campaignId,body:input.body,status:"Preparada",attempts:0,approvedAt:now,createdAt:now,updatedAt:now});return id}}
+import { and, eq } from "drizzle-orm";
+import { getDb } from "../db";
+import {
+  campaignEvents,
+  campaigns,
+  crmActivities,
+  leads,
+  messages,
+} from "../db/schema";
+import type { PersistentRepository } from "./persistence-service";
+export class D1PersistenceRepository implements PersistentRepository {
+  constructor(private readonly userId: string) {}
+  async createCampaign(
+    input: Parameters<PersistentRepository["createCampaign"]>[0],
+  ) {
+    const db = getDb(),
+      now = new Date(),
+      id = crypto.randomUUID();
+    await db.transaction(async (tx) => {
+      await tx.insert(campaigns).values({
+        id,
+        userId: this.userId,
+        name: input.name,
+        city: input.city,
+        state: input.state,
+        segment: input.segment,
+        companyLimit: input.companyLimit,
+        services: JSON.stringify(input.services),
+        dailyLimit: input.dailyLimit,
+        sendStart: "09:00",
+        sendEnd: "18:00",
+        status: "draft",
+        createdAt: now,
+        updatedAt: now,
+      });
+      await tx.insert(campaignEvents).values({
+        id: crypto.randomUUID(),
+        userId: this.userId,
+        campaignId: id,
+        type: "campaign_created",
+        title: "Campanha criada",
+        createdAt: now,
+        updatedAt: now,
+      });
+    });
+    return id;
+  }
+  async updateCampaignStatus(
+    input: Parameters<PersistentRepository["updateCampaignStatus"]>[0],
+  ) {
+    const db = getDb(),
+      now = new Date();
+    await db.transaction(async (tx) => {
+      const changed = await tx
+        .update(campaigns)
+        .set({ status: input.status, updatedAt: now })
+        .where(
+          and(
+            eq(campaigns.id, input.campaignId),
+            eq(campaigns.userId, this.userId),
+          ),
+        )
+        .returning({ id: campaigns.id });
+      if (!changed.length) throw new Error("Campanha não encontrada.");
+      const paused = input.status === "paused";
+      await tx.insert(campaignEvents).values({
+        id: crypto.randomUUID(),
+        userId: this.userId,
+        campaignId: input.campaignId,
+        type: paused ? "campaign_paused" : "campaign_resumed",
+        title: paused ? "Campanha pausada" : "Campanha retomada",
+        createdAt: now,
+        updatedAt: now,
+      });
+    });
+  }
+  async moveLead(input: Parameters<PersistentRepository["moveLead"]>[0]) {
+    const db = getDb(),
+      now = new Date();
+    await db.transaction(async (tx) => {
+      const changed = await tx
+        .update(leads)
+        .set({ crmStage: input.stage, updatedAt: now })
+        .where(
+          and(
+            eq(leads.id, input.leadId),
+            eq(leads.campaignId, input.campaignId),
+            eq(leads.userId, this.userId),
+          ),
+        )
+        .returning({ id: leads.id });
+      if (!changed.length) throw new Error("Lead não encontrado.");
+      await tx.insert(crmActivities).values({
+        id: crypto.randomUUID(),
+        userId: this.userId,
+        campaignId: input.campaignId,
+        leadId: input.leadId,
+        type: "stage_changed",
+        note: `Etapa alterada para ${input.stage}`,
+        createdAt: now,
+        updatedAt: now,
+      });
+    });
+  }
+  async prepareMessage(
+    input: Parameters<PersistentRepository["prepareMessage"]>[0],
+  ) {
+    const db = getDb(),
+      now = new Date(),
+      id = crypto.randomUUID();
+    const owned = await db
+      .select({ id: leads.id })
+      .from(leads)
+      .where(
+        and(
+          eq(leads.id, input.leadId),
+          eq(leads.campaignId, input.campaignId),
+          eq(leads.userId, this.userId),
+        ),
+      )
+      .limit(1);
+    if (!owned.length) throw new Error("Lead não encontrado.");
+    await db.insert(messages).values({
+      id,
+      userId: this.userId,
+      leadId: input.leadId,
+      campaignId: input.campaignId,
+      body: input.body,
+      status: "Preparada",
+      attempts: 0,
+      approvedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+    return id;
+  }
+}

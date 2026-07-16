@@ -60,6 +60,12 @@ export async function POST(request: Request) {
       item.messageId,
     );
     if (!context) throw new Error("Contexto inválido.");
+    if (
+      ["Pausada", "paused", "Arquivada", "archived"].includes(
+        context.campaign.status,
+      )
+    )
+      throw new Error("Campanha pausada bloqueia reagendamento da fila.");
     const adjusted = adjustSchedule(
       input.scheduledFor,
       context.campaign.config,

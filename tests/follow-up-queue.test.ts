@@ -157,6 +157,12 @@ class MemoryRepo implements FollowUpRepository {
   async listQueue(user: string) {
     return this.queue.filter((x) => x.userId === user);
   }
+  async queueCampaignStatus(user: string, id: string) {
+    const item = this.queue.find(
+      (entry) => entry.userId === user && entry.id === id,
+    );
+    return item ? this.contexts.get(user)?.campaign.status : undefined;
+  }
 }
 const when = "2027-07-05T15:00:00.000Z";
 test("follow-up é criado para lead correto", async () => {

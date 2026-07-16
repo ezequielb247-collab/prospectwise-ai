@@ -48,6 +48,7 @@ export interface FollowUpRepository {
     patch: Partial<QueueItem>,
   ): Promise<QueueItem>;
   listQueue(userId: string): Promise<QueueItem[]>;
+  queueCampaignStatus(userId: string, id: string): Promise<string | undefined>;
 }
 const forbidden = new Set(["Opt-out", "Cliente", "Sem interesse"]);
 export class FollowUpService {
@@ -164,6 +165,12 @@ export class FollowUpService {
 }
 export class QueueService {
   constructor(private repo: FollowUpRepository) {}
+  private async ensureCampaignActive(userId: string, id: string) {
+    const status = await this.repo.queueCampaignStatus(userId, id);
+    if (!status) throw new Error("Item não encontrado.");
+    if (["Pausada", "paused", "Arquivada", "archived"].includes(status))
+      throw new Error("Campanha pausada bloqueia processamento da fila.");
+  }
   async schedule(
     userId: string,
     input: {
@@ -229,7 +236,8 @@ export class QueueService {
       preview: adjusted,
     };
   }
-  complete(userId: string, id: string) {
+  async complete(userId: string, id: string) {
+    await this.ensureCampaignActive(userId, id);
     return this.repo.updateQueue(userId, id, {
       status: "completed",
       processedAt: new Date().toISOString(),
@@ -238,7 +246,8 @@ export class QueueService {
   cancel(userId: string, id: string) {
     return this.repo.updateQueue(userId, id, { status: "cancelled" });
   }
-  pending(userId: string, id: string) {
+  async pending(userId: string, id: string) {
+    await this.ensureCampaignActive(userId, id);
     return this.repo.updateQueue(userId, id, {
       status: "pending",
       processedAt: null,
