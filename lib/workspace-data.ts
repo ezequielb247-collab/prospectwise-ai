@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "./supabase/server";
 import { MOCK_LEADS } from "./mock-leads";
 import { campaignSnapshot, MOCK_CAMPAIGNS } from "./mock-campaigns";
 import type { CrmStage } from "./crm";
+import {logDatabaseError} from "./safe-db-log";
 export type WorkspaceLead = {
   id: string;
   campaignId: string;
@@ -69,6 +70,9 @@ export async function getWorkspaceData(userId: string): Promise<WorkspaceData> {
       .select("campaign_id,status")
       .eq("user_id", userId),
   ]);
+  if(campaignError)logDatabaseError({table:"campaigns",operation:"select dashboard",error:campaignError,authenticated:Boolean(userId)});
+  if(leadError)logDatabaseError({table:"leads",operation:"select dashboard",error:leadError,authenticated:Boolean(userId)});
+  if(messageError)logDatabaseError({table:"messages",operation:"select dashboard",error:messageError,authenticated:Boolean(userId)});
   if (campaignError || leadError || messageError)
     throw campaignError ?? leadError ?? messageError;
   const leads: WorkspaceLead[] = (leadRows ?? []).map((lead, index) => ({

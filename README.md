@@ -4,6 +4,7 @@
 
 1. Crie um projeto no Supabase.
 2. No SQL Editor, execute `supabase/migrations/202607160001_sprint5_schema_rls.sql`.
+   Se a migration inicial já foi aplicada, execute em seguida `supabase/migrations/202607160002_fix_authenticated_grants.sql`. Ela concede privilégios básicos aos papéis autenticados e administrativos, mantendo o RLS como controle de linhas.
 3. Copie `.env.example` para `.env.local` e preencha:
 
 ```env
