@@ -1,11 +1,14 @@
-# Sprint 10.1 — Revisão Visual e Consistência
+# Sprint 10.2 — Refinamento de UX Comercial
 
 **Status:** Concluída localmente
 
-Revisão transversal de apresentação e usabilidade, sem mudanças nas regras de negócio, persistência, autenticação ou integrações.
+Refinamento visual e de interação do Radar e dos fluxos comerciais, sem mudanças nas regras de negócio, persistência, autenticação ou integrações.
 
-- Primitivas reutilizáveis para cabeçalhos, seções, formulários, ações, estados e status.
-- Leads com seleção por linha, checkbox de página e barra de ações em massa responsiva.
-- Detalhes do lead com presença digital, proposta e indicadores comerciais reorganizados.
-- Tabelas, formulários, feedback, foco de teclado e breakpoints padronizados globalmente.
-- Valores internos de status preservados, com tradução somente na apresentação.
+- Resumo do Radar calculado a partir das oportunidades carregadas.
+- Cards compactos, score semântico, maior oportunidade e serviços recomendados em chips.
+- Seleção em massa persistente durante erros, ações desabilitadas e feedback de processamento.
+- Filtros com quantidade de resultados, limpeza rápida e comportamento responsivo.
+- Navegação acessível por mouse e teclado, skeleton representativo e movimento reduzido.
+- Auditoria visual de Leads, Listas, Prospecção, Propostas e Respostas.
+
+Nenhuma migration, provider externo ou integração paga foi adicionada.

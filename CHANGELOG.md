@@ -1,5 +1,15 @@
 # Changelog
 
+## Sprint 10.2 — Refinamento de UX Comercial
+
+- Radar com resumo real de oportunidades por prioridade e score médio.
+- Cards mais compactos, clicáveis por mouse e teclado, com score semântico, destaque de seleção, maior oportunidade e serviços em chips.
+- Barra de ações em massa com contador permanente, estados desabilitado/processando, seleção filtrada, lista, mensagens, CRM e exportação.
+- Filtros com total de resultados, limpeza rápida, limites acessíveis de score e adaptação para telas menores.
+- Skeleton completo do Radar, respeito a movimento reduzido e estados de erro preservando a seleção.
+- Listas, Prospecção e Assistente de Respostas alinhados às primitivas visuais compartilhadas; Leads e Propostas auditados sem redesenho desnecessário.
+- Quinze testes de regressão adicionados para interações, acessibilidade, responsividade e consistência visual.
+
 ## Sprint 10.1 — Revisão Visual e Consistência
 
 - Design system interno com primitivas reutilizáveis para páginas, seções, formulários, ações, alertas, indicadores, estados vazios, tabelas e layouts móveis.
