@@ -1,3 +1,4 @@
+import "server-only";
 type DatabaseError = { code?: unknown; message?: unknown };
 export function logDatabaseError(input: {
   table: string;

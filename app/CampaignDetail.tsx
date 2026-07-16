@@ -1,6 +1,6 @@
 import Link from "next/link";
 import CampaignIntelligence from "./CampaignIntelligence";
-import type {CampaignDetailData} from "../lib/workspace-data";
+import type {CampaignDetailData} from "../lib/workspace-model";
 type Snapshot = CampaignDetailData;
 export default function CampaignDetail({ data }: { data: Snapshot }) {
   const { campaign, leads, messages, events, metrics } = data;

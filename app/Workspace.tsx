@@ -7,7 +7,7 @@ import {
   buildWorkspaceLeadMessage,
   type WorkspaceData,
   type WorkspaceLead,
-} from "../lib/workspace-data";
+} from "../lib/workspace-model";
 import CampaignMetrics from "./CampaignMetrics";
 import {logoutAction} from "./auth/actions";
 const navigation = [

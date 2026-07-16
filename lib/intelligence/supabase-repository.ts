@@ -1,3 +1,4 @@
+import "server-only";
 import type {SupabaseClient} from "@supabase/supabase-js";
 import type {IntelligenceActivityRepository,LeadAnalysisRepository,LeadIntelligenceDataSource} from "./repositories";
 import type {LeadAnalysis,LeadIntelligenceInput,RecommendedService} from "./types";

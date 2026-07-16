@@ -1,3 +1,4 @@
+import "server-only";
 import {and,eq} from "drizzle-orm";
 import {getDb} from "../db";
 import {campaignEvents,campaigns,crmActivities,leads,messages} from "../db/schema";

@@ -1,3 +1,4 @@
+import "server-only";
 import {D1PersistenceRepository} from "./d1-persistence-repository";
 import {PersistenceService} from "./persistence-service";
 import {hasSupabaseConfig} from "./supabase/config";

@@ -1,3 +1,4 @@
+import "server-only";
 import {LeadScoringEngine} from "./lead-scoring-engine";
 import {LeadIntelligenceService} from "./lead-intelligence-service";
 import {MockLeadIntelligenceDataSource} from "./mock-intelligence-data-source";
