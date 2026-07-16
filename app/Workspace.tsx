@@ -11,6 +11,7 @@ import BulkLeadActions from "./BulkLeadActions";
 import ExecutiveMetrics from "./ExecutiveMetrics";
 import OnboardingChecklist from "./OnboardingChecklist";
 import ProductSettingsPanel from "./ProductSettingsPanel";
+import ProfessionalProfilePanel from "./ProfessionalProfilePanel";
 import {
   dashboardMetrics,
   exportLeadsCsv,
@@ -30,6 +31,10 @@ const navigation = [
   ["mensagens", "✉", "Mensagens"],
   ["follow-ups", "◷", "Follow-ups"],
   ["fila", "≡", "Fila"],
+  ["listas", "☷", "Listas"],
+  ["prospeccao", "▶", "Prospecção"],
+  ["propostas", "▤", "Propostas"],
+  ["respostas", "↩", "Respostas"],
   ["configuracoes", "⚙", "Configurações"],
 ];
 const subtitles: Record<string, string> = {
@@ -1474,5 +1479,5 @@ function Settings({ setNotice }: { setNotice: (v: string) => void }) {
       </article>
       <button className="primary save">Salvar configurações</button>
     </form>
-  <ProductSettingsPanel/></>);
+  <ProfessionalProfilePanel/><ProductSettingsPanel/></>);
 }

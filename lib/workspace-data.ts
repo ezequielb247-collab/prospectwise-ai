@@ -217,7 +217,7 @@ export async function getWorkspaceData(userId: string): Promise<WorkspaceData> {
           clients: campaignLeads.filter((lead) => lead.status === "Cliente")
             .length,
           progress: campaign.company_limit
-            ? Math.round((campaignLeads.length / campaign.company_limit) * 100)
+            ? Math.min(100, Math.round((campaignLeads.length / campaign.company_limit) * 100))
             : 0,
           interested: campaignLeads.filter(
             (lead) => lead.status === "Interessado",
@@ -379,7 +379,7 @@ export async function getCampaignDetail(
     responses: messages.filter((item) => item.status === "Respondida").length,
     clients: leads.filter((item) => item.status === "Cliente").length,
     progress: campaign.company_limit
-      ? Math.round((leads.length / campaign.company_limit) * 100)
+      ? Math.min(100, Math.round((leads.length / campaign.company_limit) * 100))
       : 0,
   };
   return {

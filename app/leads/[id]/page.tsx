@@ -4,6 +4,7 @@ import { requireCurrentUser } from "../../../lib/auth/session";
 import LeadIntelligencePanel from "../../LeadIntelligencePanel";
 import LeadSalesPanel from "../../LeadSalesPanel";
 import DigitalPresencePanel from "../../DigitalPresencePanel";
+import ProposalCreatePanel from "../../ProposalCreatePanel";
 import { digitalPresence } from "../../../lib/digital-presence/container";
 import { salesProduct } from "../../../lib/sales-product/container";
 import { messagesForUser } from "../../../lib/messages/container";
@@ -121,6 +122,7 @@ export default async function Page({
           </div>
           <LeadIntelligencePanel leadId={lead.id} />
           <DigitalPresencePanel leadId={lead.id} initial={presence} />
+          <ProposalCreatePanel leadId={lead.id} campaignId={lead.campaignId} />
           <LeadSalesPanel
             leadId={lead.id}
             initialFavorite={Boolean(lead.favorite)}
