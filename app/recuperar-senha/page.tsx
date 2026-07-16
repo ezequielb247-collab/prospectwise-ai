@@ -1,0 +1,3 @@
+import Link from "next/link";
+import {recoverAction} from "../auth/actions";
+export default async function Page({searchParams}:{searchParams:Promise<{error?:string}>}){const {error}=await searchParams;return <main className="form-page login-page"><div className="form-card"><span className="brand-mark">P</span><h1>Recuperar senha</h1><p>Enviaremos um link seguro para o seu e-mail.</p>{error&&<div className="search-error">{error}</div>}<form action={recoverAction}><label>E-mail<input name="email" type="email" required autoComplete="email"/></label><button className="primary full">Enviar instruções</button></form><Link href="/login">Voltar ao login</Link></div></main>}
