@@ -22,4 +22,5 @@ Não conectar APIs externas, OpenAI, WhatsApp, Meta, Evolution, Twilio, e-mail, 
 - Repositório privado publicado em `ezequielb247-collab/prospectwise-ai`, branch `main`.
 - Produção publicada em `https://prospectwise-ai.vercel.app`.
 - Rotas privadas e headers de segurança validados sem sessão.
+- Correção de produção do preview CSV: consulta mínima para deduplicação e diagnóstico seguro no servidor.
 - Validação autenticada e configuração do Supabase Auth aguardam acesso ao painel e rotação preventiva da service role.

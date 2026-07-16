@@ -10,6 +10,9 @@
 - Checklist de produção e roteiro de primeira campanha real por CSV adicionados.
 - Repositório privado conectado à Vercel e primeira publicação concluída em `prospectwise-ai.vercel.app`.
 - Redirects de rotas privadas e headers de segurança validados em produção sem sessão.
+- Preview CSV corrigido para não depender de colunas opcionais fora das chaves de deduplicação.
+- Diagnóstico seguro do preview agora registra metadados e exceção no servidor, expondo nome, mensagem e stack somente em desenvolvimento.
+- Endpoint de preview aceita o JSON existente e `multipart/form-data`, sem registrar conteúdo do CSV.
 
 ## Sprint 9 — Organização Comercial
 
