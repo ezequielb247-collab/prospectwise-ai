@@ -629,6 +629,7 @@ function Leads({
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [sort, setSort] = useState<LeadSort>("createdAt");
   const [direction, setDirection] = useState<"asc" | "desc">("desc");
+  const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const cities = useMemo(
@@ -840,8 +841,8 @@ function Leads({
           <button onClick={() => exportCsv("campaign")}>Campanha atual</button>
         </details>
       </div>
-      <BulkLeadActions leads={paged.items} campaigns={campaigns} />
-      <LeadTable rows={paged.items} editable setNotice={setNotice} />
+      <BulkLeadActions leads={paged.items} campaigns={campaigns} selected={selectedLeadIds} onSelectionChange={setSelectedLeadIds} />
+      <LeadTable rows={paged.items} editable setNotice={setNotice} selected={selectedLeadIds} onSelectionChange={setSelectedLeadIds} />
       <div className="pagination table-pagination">
         <span>{paged.total} registros</span>
         <label>
@@ -878,10 +879,14 @@ function LeadTable({
   rows,
   editable = false,
   setNotice,
+  selected = [],
+  onSelectionChange,
 }: {
   rows: WorkspaceLead[];
   editable?: boolean;
   setNotice?: (value: string) => void;
+  selected?: string[];
+  onSelectionChange?: (ids: string[]) => void;
 }) {
   const [editing, setEditing] = useState<WorkspaceLead>();
   const [hidden, setHidden] = useState<string[]>([]);
@@ -921,11 +926,16 @@ function LeadTable({
     } else setNotice?.("Não foi possível excluir o lead.");
   }
   const visible = rows.filter((row) => !hidden.includes(row.id));
+  const allVisibleSelected = visible.length > 0 && visible.every(row => selected.includes(row.id));
+  function toggleLead(id: string) {
+    onSelectionChange?.(selected.includes(id) ? selected.filter(item => item !== id) : [...selected, id]);
+  }
   return (
     <div className="table-wrap">
       <table>
         <thead>
           <tr>
+            {onSelectionChange && <th className="selection-cell"><input type="checkbox" aria-label="Selecionar página" checked={allVisibleSelected} onChange={() => onSelectionChange(allVisibleSelected ? selected.filter(id => !visible.some(row => row.id === id)) : [...new Set([...selected, ...visible.map(row => row.id)])])} /></th>}
             <th>Empresa</th>
             <th>Score</th>
             <th>Status</th>
@@ -937,6 +947,7 @@ function LeadTable({
         <tbody>
           {visible.map((l) => (
             <tr key={l.id}>
+              {onSelectionChange && <td className="selection-cell"><input type="checkbox" aria-label={`Selecionar ${l.name}`} checked={selected.includes(l.id)} onChange={() => toggleLead(l.id)} /></td>}
               <td>
                 <Company lead={l} />
               </td>
@@ -972,17 +983,7 @@ function LeadTable({
                 <Link href={`/leads/${l.id}`} className="details-link">
                   Ver detalhes
                 </Link>
-                {editable && (
-                  <div className="row-actions">
-                    <button onClick={() => setEditing(l)}>Editar</button>
-                    <button
-                      className="danger-link"
-                      onClick={() => void remove(l)}
-                    >
-                      Excluir
-                    </button>
-                  </div>
-                )}
+                {editable && <details className="table-action-menu"><summary aria-label={`Mais ações para ${l.name}`}>Mais ações</summary><button onClick={() => setEditing(l)}>Editar</button><button className="danger-link" onClick={() => void remove(l)}>Excluir</button></details>}
               </td>
             </tr>
           ))}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import CampaignIntelligence from "./CampaignIntelligence";
 import BulkLeadActions from "./BulkLeadActions";
 import CampaignFollowUpSettings from "./CampaignFollowUpSettings";
+import { StatusBadge } from "./ui/interface";
 import type {CampaignDetailData} from "../lib/workspace-model";
 type Snapshot = CampaignDetailData;
 export default function CampaignDetail({ data }: { data: Snapshot }) {
@@ -181,7 +182,7 @@ export default function CampaignDetail({ data }: { data: Snapshot }) {
                           </Link>
                         </td>
                         <td>
-                          <span className="badge neutral">{lead.status}</span>
+                          <StatusBadge status={lead.status} />
                         </td>
                         <td>
                           <span
