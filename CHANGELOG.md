@@ -13,6 +13,7 @@
 - Preview CSV corrigido para não depender de colunas opcionais fora das chaves de deduplicação.
 - Diagnóstico seguro do preview agora registra metadados e exceção no servidor, expondo nome, mensagem e stack somente em desenvolvimento.
 - Endpoint de preview aceita o JSON existente e `multipart/form-data`, sem registrar conteúdo do CSV.
+- Endpoint de commit CSV agora preserva a resposta genérica em produção e registra diagnóstico estruturado de `PostgrestError` e `Error` somente no servidor.
 
 ## Sprint 9 — Organização Comercial
 

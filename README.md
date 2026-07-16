@@ -28,6 +28,8 @@ Repositório privado: `ezequielb247-collab/prospectwise-ai` (`main`).
 
 O preview usa o parser CSV interno e seguro, aceita o fluxo JSON da interface e também `multipart/form-data` com os campos `file`, `campaignId` e `mapping`. Não depende de PapaParse, `Buffer` ou conteúdo executável. Em produção, falhas retornam uma mensagem genérica e os detalhes ficam apenas nos logs do servidor; em desenvolvimento, `message`, `name` e `stack` também são incluídos na resposta para diagnóstico.
 
+O commit da importação segue a mesma separação: produção retorna somente `Falha ao importar CSV.`, enquanto desenvolvimento inclui `name`, `message`, `code`, `details`, `hint` e `stack`. O log estruturado do servidor registra apenas metadados da operação e nunca o conteúdo do CSV.
+
 ## Sprint 9 — CRM comercial interno
 
 - Agenda em `/agenda` com tarefas por lead e campanha.
