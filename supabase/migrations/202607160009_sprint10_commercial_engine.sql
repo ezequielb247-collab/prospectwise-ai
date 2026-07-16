@@ -71,6 +71,18 @@ alter table public.app_settings add column if not exists default_prices jsonb no
 alter table public.app_settings add column if not exists feature_flags jsonb not null default '{"google_places_enabled":false,"outscraper_enabled":false,"deterministic_messages_v2":true,"proposals_enabled":true,"manual_prospecting_enabled":true}'::jsonb;
 alter table public.messages add column if not exists variant text check(variant in ('A','B'));
 
+do $$ begin
+  if not exists(select 1 from pg_constraint where conname='leads_campaign_owner_unique') then
+    alter table public.leads add constraint leads_campaign_owner_unique unique(id,campaign_id,user_id);
+  end if;
+  if not exists(select 1 from pg_constraint where conname='proposals_lead_campaign_owner_fk') then
+    alter table public.proposals add constraint proposals_lead_campaign_owner_fk foreign key(lead_id,campaign_id,user_id) references public.leads(id,campaign_id,user_id);
+  end if;
+  if not exists(select 1 from pg_constraint where conname='contact_attempts_lead_campaign_owner_fk') then
+    alter table public.contact_attempts add constraint contact_attempts_lead_campaign_owner_fk foreign key(lead_id,campaign_id,user_id) references public.leads(id,campaign_id,user_id);
+  end if;
+end $$;
+
 do $$ declare t text; begin foreach t in array array['lead_digital_presence','prospect_lists','prospect_list_items','proposals','response_templates','contact_attempts','onboarding_progress'] loop
   execute format('alter table public.%I enable row level security',t);
   execute format('drop policy if exists own_rows on public.%I',t);
