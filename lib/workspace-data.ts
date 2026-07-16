@@ -33,7 +33,7 @@ export async function getWorkspaceData(userId: string): Promise<WorkspaceData> {
       .eq("user_id", userId),
     supabase
       .from("leads")
-      .select("id,campaign_id,name,category,city,state,website,phone,crm_stage,rating,reviews,provider,notes,created_at")
+      .select("id,campaign_id,name,category,city,state,website,phone,crm_stage,rating,reviews,notes,created_at")
       .eq("user_id", userId),
     supabase
       .from("messages")
@@ -63,7 +63,7 @@ export async function getWorkspaceData(userId: string): Promise<WorkspaceData> {
     website:lead.website,
     phone: lead.phone ?? "—",
     state:lead.state??undefined,
-    rating:lead.rating===null?null:Number(lead.rating),reviews:lead.reviews,provider:lead.provider??"legacy",notes:lead.notes,createdAt:lead.created_at,
+    rating:lead.rating===null?null:Number(lead.rating),reviews:lead.reviews,notes:lead.notes,createdAt:lead.created_at,
     initials: lead.name
       .split(/\s+/)
       .slice(0, 2)
