@@ -8,6 +8,7 @@ import { type WorkspaceData, type WorkspaceLead } from "../lib/workspace-model";
 import { logoutAction } from "./auth/actions";
 import MessageCenter from "./MessageCenter";
 import BulkLeadActions from "./BulkLeadActions";
+import ExecutiveMetrics from "./ExecutiveMetrics";
 import {
   dashboardMetrics,
   exportLeadsCsv,
@@ -307,7 +308,7 @@ function Dashboard({ data }: { data: WorkspaceData }) {
     ["Mensagens agendadas", summary.scheduled, "◷", "blue"],
   ];
   return (
-    <>
+    <><ExecutiveMetrics />
       <div className="metrics">
         {metrics.map(([label, value, icon, tone]) => (
           <article className="metric" key={label}>
