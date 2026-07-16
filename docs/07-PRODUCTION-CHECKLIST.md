@@ -2,24 +2,25 @@
 
 ## 1. Git e segredos
 
-- [ ] O repositório GitHub é privado e a branch de produção é `main`.
-- [ ] `.env`, `.env.local`, `.env.*.local`, logs, `.vercel`, `.next`, `.vinext`, `dist` e `node_modules` não estão versionados.
-- [ ] `git ls-files` não retorna credenciais, tokens ou arquivos locais.
-- [ ] O histórico será enviado por fast-forward, sem force push ou reescrita.
-- [ ] `PROSPECTWISE_SPEC_V1.md` só será incluído após autorização; o destino preferido é `docs/`.
+- [x] O repositório GitHub é privado e a branch de produção é `main`.
+- [x] `.env`, `.env.local`, `.env.*.local`, logs, `.vercel`, `.next`, `.vinext`, `dist` e `node_modules` não estão versionados.
+- [x] `git ls-files` não retorna credenciais, tokens ou arquivos locais.
+- [x] O histórico foi enviado por fast-forward, sem force push ou reescrita.
+- [x] A especificação oficial foi autorizada e incluída em `docs/PROSPECTWISE_SPEC_V1.md`.
 
 ## 2. Vercel
 
-- [ ] Framework: Next.js.
-- [ ] Node.js: 22.x (mínimo 22.13).
-- [ ] Build Command: `npm run build:vercel`.
-- [ ] Variáveis configuradas separadamente para Production e Preview:
+- [x] Framework: Next.js.
+- [x] Node.js: 22.x (mínimo 22.13).
+- [x] Build Command: `npm run build:vercel`.
+- [x] Variáveis configuradas para Production e Preview:
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
   - `SUPABASE_SERVICE_ROLE_KEY`
-- [ ] Nenhum valor foi copiado para documentação, logs ou commits.
-- [ ] O deploy concluiu e a URL pública responde por HTTPS.
-- [ ] Os headers `nosniff`, `DENY`, Referrer Policy, Permissions Policy e HSTS estão presentes.
+- [x] Nenhum valor foi copiado para documentação, logs ou commits.
+- [x] O deploy concluiu e `https://prospectwise-ai.vercel.app` responde por HTTPS.
+- [x] Os headers `nosniff`, `DENY`, Referrer Policy, Permissions Policy e HSTS estão presentes.
+- [ ] Rotacionar a service role preventivamente antes do primeiro uso real e atualizar a variável na Vercel.
 
 ## 3. Supabase Auth
 
@@ -37,7 +38,7 @@ Após obter a URL pública, abrir **Authentication → URL Configuration**:
 
 ## 4. Segurança
 
-- [ ] Visitante sem sessão é redirecionado para `/login` em Dashboard, Campanhas, Leads, Radar, CRM, Mensagens, Follow-ups, Fila, Agenda e Configurações.
+- [x] Visitante sem sessão é redirecionado para `/login` em Dashboard, Campanhas, Leads, Radar, CRM, Mensagens, Follow-ups, Fila, Agenda e Configurações.
 - [ ] Todas as APIs rejeitam usuário ausente e validam propriedade pelo `user_id`.
 - [ ] Usuário A não lê nem altera recursos do usuário B.
 - [ ] `SUPABASE_SERVICE_ROLE_KEY` não aparece nos artefatos `.next/static` nem no código entregue ao navegador.

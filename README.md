@@ -20,6 +20,10 @@ npm run build:vercel
 
 Consulte [docs/07-PRODUCTION-CHECKLIST.md](docs/07-PRODUCTION-CHECKLIST.md) antes da publicação e [docs/08-FIRST-REAL-CAMPAIGN.md](docs/08-FIRST-REAL-CAMPAIGN.md) para o primeiro uso por CSV. Nenhuma mensagem é enviada automaticamente.
 
+Produção: <https://prospectwise-ai.vercel.app>
+
+Repositório privado: `ezequielb247-collab/prospectwise-ai` (`main`).
+
 ## Sprint 9 — CRM comercial interno
 
 - Agenda em `/agenda` com tarefas por lead e campanha.

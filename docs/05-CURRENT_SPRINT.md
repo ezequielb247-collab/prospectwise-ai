@@ -19,4 +19,7 @@ Não conectar APIs externas, OpenAI, WhatsApp, Meta, Evolution, Twilio, e-mail, 
 
 - Build local Vinext e build nativo Next/Vercel preparados.
 - Checklist de produção e roteiro da primeira campanha criados.
-- Publicação bloqueada até existir um repositório remoto privado e uma sessão/projeto Vercel acessível.
+- Repositório privado publicado em `ezequielb247-collab/prospectwise-ai`, branch `main`.
+- Produção publicada em `https://prospectwise-ai.vercel.app`.
+- Rotas privadas e headers de segurança validados sem sessão.
+- Validação autenticada e configuração do Supabase Auth aguardam acesso ao painel e rotação preventiva da service role.

@@ -8,6 +8,8 @@
 - Fallback D1/Cloudflare isolado do caminho Supabase/Vercel por carregamento tardio.
 - Agenda, Follow-ups e Fila incluídos no proxy de sessão.
 - Checklist de produção e roteiro de primeira campanha real por CSV adicionados.
+- Repositório privado conectado à Vercel e primeira publicação concluída em `prospectwise-ai.vercel.app`.
+- Redirects de rotas privadas e headers de segurança validados em produção sem sessão.
 
 ## Sprint 9 — Organização Comercial
 
