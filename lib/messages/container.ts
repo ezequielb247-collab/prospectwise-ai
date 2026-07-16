@@ -1,0 +1,1 @@
+import "server-only";import {createSupabaseServerClient} from "../supabase/server";import {MessageService} from "./service";import {SupabaseMessageRepository} from "./supabase-repository";export async function messagesForUser(){const repo=new SupabaseMessageRepository(await createSupabaseServerClient());return {repo,service:new MessageService(repo)}}
