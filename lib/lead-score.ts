@@ -1,1 +1,0 @@
-export function calculateLeadScore(input:{hasWebsite:boolean;rating?:number;reviews?:number}){let score=input.hasWebsite?45:75;if((input.rating??0)>=4.5)score+=10;if((input.reviews??0)>=20)score+=7;return Math.min(100,score)}
