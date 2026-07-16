@@ -50,7 +50,7 @@ export type MessageContext = {
     campaignId: string;
     name: string;
     phone: string | null;
-    website: string | null;
+    website?: string | null;
     city: string | null;
     state: string | null;
     category: string | null;
