@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { WorkspaceData } from "../lib/workspace-model";
 import type { FollowUp, QueueItem } from "../lib/follow-up/types";
+import { StatusBadge } from "./ui/interface";
 export function FollowUpsPanel({ data }: { data: WorkspaceData }) {
   const [items, setItems] = useState<FollowUp[]>([]),
     [campaignId, setCampaignId] = useState(""),
@@ -239,7 +240,7 @@ function OperationTable({
                   </Link>
                 </td>
                 <td>
-                  <span className="badge neutral">{item.status}</span>
+                  <StatusBadge status={item.status} />
                 </td>
                 <td>{new Date(item.scheduledFor).toLocaleString("pt-BR")}</td>
                 <td>

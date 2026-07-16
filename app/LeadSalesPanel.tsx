@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { LeadNote, SalesTask } from "../lib/sales-product/types";
+import { StatCard, StatusBadge } from "./ui/interface";
 export default function LeadSalesPanel({
   leadId,
   initialFavorite,
@@ -102,28 +103,7 @@ export default function LeadSalesPanel({
             {favorite ? "★ Favorito" : "☆ Favoritar"}
           </button>
         </div>
-        <div className="lead-facts">
-          <span>
-            <b>{tasks.filter((item) => item.status !== "concluida").length}</b>
-            <small>Tarefas abertas</small>
-          </span>
-          <span>
-            <b>{notes.length}</b>
-            <small>Notas</small>
-          </span>
-          <span>
-            <b>{tasks.filter((item) => item.status === "atrasada").length}</b>
-            <small>Atrasadas</small>
-          </span>
-          <span>
-            <b>{messageCount}</b>
-            <small>Mensagens</small>
-          </span>
-          <span>
-            <b>{followUpCount}</b>
-            <small>Follow-ups</small>
-          </span>
-        </div>
+        <div className="lead-facts"><StatCard value={tasks.filter(item => item.status !== "concluida").length} label="Tarefas abertas" /><StatCard value={notes.length} label="Notas" /><StatCard value={tasks.filter(item => item.status === "atrasada").length} label="Atrasadas" /><StatCard value={messageCount} label="Mensagens" /><StatCard value={followUpCount} label="Follow-ups" /></div>
       </article>
       <article className="panel">
         <div className="panel-head">
@@ -173,7 +153,7 @@ export default function LeadSalesPanel({
                 {new Date(item.scheduledFor).toLocaleString("pt-BR")}
               </small>
             </div>
-            <span className="badge neutral">{item.status}</span>
+            <StatusBadge status={item.status} />
           </div>
         ))}
         {!tasks.length && (
