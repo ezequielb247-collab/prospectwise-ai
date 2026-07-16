@@ -7,7 +7,7 @@ export type WorkspaceLead = {
   category: string;
   city: string;
   state?: string;
-  score: number;
+  score: number | null;
   classification?: string;
   priority?: string;
   status: CrmStage;
@@ -24,6 +24,7 @@ export type WorkspaceLead = {
   tone: string;
   analysis: string;
   services: string[];
+  analyzedAt?: string;
 };
 export type WorkspaceCampaign = {
   id: string;

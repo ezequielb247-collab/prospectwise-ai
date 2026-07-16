@@ -15,6 +15,11 @@ import type {
   WorkspaceData,
   WorkspaceLead,
 } from "./workspace-model";
+import {
+  analysisSnapshot,
+  latestAnalysisByLead,
+  type PersistedLeadAnalysis,
+} from "./intelligence/latest-analysis";
 function demoData(): WorkspaceData {
   return {
     leads: MOCK_LEADS,
@@ -76,8 +81,9 @@ export async function getWorkspaceData(userId: string): Promise<WorkspaceData> {
       .limit(50),
     supabase
       .from("lead_analyses")
-      .select("lead_id,score,classification,priority,recommended_services,reasons")
-      .eq("user_id", userId),
+      .select("user_id,lead_id,campaign_id,score,classification,priority,recommended_services,reasons,analyzed_at")
+      .eq("user_id", userId)
+      .order("analyzed_at", { ascending: false }),
     supabase
       .from("tasks")
       .select(
@@ -143,10 +149,13 @@ export async function getWorkspaceData(userId: string): Promise<WorkspaceData> {
       analysisError ??
       taskError
     );
-  const analyses = new Map(
-    (analysisRows ?? []).map((item) => [item.lead_id, item]),
+  const analyses = latestAnalysisByLead(
+    (analysisRows ?? []) as PersistedLeadAnalysis[],
+    userId,
   );
-  const leads: WorkspaceLead[] = (leadRows ?? []).map((lead, index) => ({
+  const leads: WorkspaceLead[] = (leadRows ?? []).map((lead, index) => {
+    const analysis = analysisSnapshot(analyses.get(lead.id));
+    return ({
     id: lead.id,
     campaignId: lead.campaign_id,
     name: lead.name,
@@ -154,9 +163,9 @@ export async function getWorkspaceData(userId: string): Promise<WorkspaceData> {
     category: lead.category ?? "Sem categoria",
     city: lead.city ?? "",
     state: lead.state ?? undefined,
-    score: analyses.get(lead.id)?.score ?? 0,
-    classification: analyses.get(lead.id)?.classification,
-    priority: analyses.get(lead.id)?.priority,
+    score: analysis?.score ?? null,
+    classification: analysis?.classification,
+    priority: analysis?.priority,
     status: lead.crm_stage as CrmStage,
     site: Boolean(lead.website),
     website: lead.website,
@@ -174,12 +183,12 @@ export async function getWorkspaceData(userId: string): Promise<WorkspaceData> {
       .toUpperCase(),
     tone: ["mint", "violet", "amber", "blue", "rose"][index % 5],
     analysis:
-      analyses.get(lead.id)?.reasons?.[0] ??
+      analysis?.reasons[0] ??
       "A análise automática ainda não foi concluída.",
-    services: (analyses.get(lead.id)?.recommended_services ?? [])
-      .map((service: { name?: string }) => service.name)
-      .filter(Boolean) as string[],
-  }));
+    services: analysis?.services ?? [],
+    analyzedAt: analysis?.analyzedAt,
+  });
+  });
   return {
     leads,
     campaigns: (campaignRows ?? []).map((campaign) => {
@@ -213,12 +222,12 @@ export async function getWorkspaceData(userId: string): Promise<WorkspaceData> {
           interested: campaignLeads.filter(
             (lead) => lead.status === "Interessado",
           ).length,
-          averageScore: campaignLeads.length
+          averageScore: campaignLeads.some((lead) => lead.score !== null)
             ? Math.round(
-                campaignLeads.reduce((total, lead) => total + lead.score, 0) /
-                  campaignLeads.length,
+                campaignLeads.reduce((total, lead) => total + (lead.score ?? 0), 0) /
+                  campaignLeads.filter((lead) => lead.score !== null).length,
               )
-            : 0,
+            : undefined,
         },
       };
     }),
@@ -274,11 +283,16 @@ export async function getLeadDetail(userId: string, id: string) {
         .order("created_at", { ascending: false }),
       supabase
         .from("lead_analyses")
-        .select("score")
+        .select("user_id,lead_id,campaign_id,score,classification,priority,recommended_services,reasons,analyzed_at")
         .eq("user_id", userId)
         .eq("lead_id", id)
+        .order("analyzed_at", { ascending: false })
+        .limit(1)
         .maybeSingle(),
     ]);
+  const latestAnalysis = analysisSnapshot(
+    analysis as PersistedLeadAnalysis | undefined,
+  );
   const mapped: WorkspaceLead = {
     id: lead.id,
     campaignId: lead.campaign_id,
@@ -287,7 +301,9 @@ export async function getLeadDetail(userId: string, id: string) {
     category: lead.category ?? "Sem categoria",
     city: lead.city ?? "",
     state: lead.state ?? undefined,
-    score: analysis?.score ?? 0,
+    score: latestAnalysis?.score ?? null,
+    classification: latestAnalysis?.classification,
+    priority: latestAnalysis?.priority,
     status: lead.crm_stage,
     site: Boolean(lead.website),
     website: lead.website,
@@ -304,8 +320,9 @@ export async function getLeadDetail(userId: string, id: string) {
       .join("")
       .toUpperCase(),
     tone: "mint",
-    analysis: "",
-    services: [],
+    analysis: latestAnalysis?.reasons[0] ?? "A análise automática ainda não foi concluída.",
+    services: latestAnalysis?.services ?? [],
+    analyzedAt: latestAnalysis?.analyzedAt,
   };
   return {
     lead: mapped,

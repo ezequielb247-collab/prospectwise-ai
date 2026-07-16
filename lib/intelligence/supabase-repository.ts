@@ -120,6 +120,8 @@ export class SupabaseIntelligenceRepository
       .select("*")
       .eq("user_id", this.userId)
       .eq("lead_id", id)
+      .order("analyzed_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
     if (error) throw error;
     return data ? this.mapAnalysis(data) : undefined;
@@ -130,7 +132,8 @@ export class SupabaseIntelligenceRepository
       .from("lead_analyses")
       .select("*")
       .eq("user_id", this.userId)
-      .eq("campaign_id", id);
+      .eq("campaign_id", id)
+      .order("analyzed_at", { ascending: false });
     if (error) throw error;
     return (data ?? []).map((row) => this.mapAnalysis(row));
   }
@@ -139,7 +142,8 @@ export class SupabaseIntelligenceRepository
     const { data, error } = await this.client
       .from("lead_analyses")
       .select("*")
-      .eq("user_id", this.userId);
+      .eq("user_id", this.userId)
+      .order("analyzed_at", { ascending: false });
     if (error) throw error;
     return (data ?? []).map((row) => this.mapAnalysis(row));
   }

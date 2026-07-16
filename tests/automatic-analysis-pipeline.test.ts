@@ -122,7 +122,7 @@ test("CRM e Dashboard leem a classificação persistida", () => {
   const workspace = fs.readFileSync("lib/workspace-data.ts", "utf8");
   const crm = fs.readFileSync("app/Workspace.tsx", "utf8");
   assert.match(workspace, /classification,priority,recommended_services,reasons/);
-  assert.match(workspace, /classification: analyses\.get\(lead\.id\)/);
+  assert.match(workspace, /classification: analysis\?\.classification/);
   assert.match(crm, /lead\.classification/);
 });
 

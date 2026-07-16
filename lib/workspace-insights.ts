@@ -31,8 +31,10 @@ export function filterLeads(leads: WorkspaceLead[], filters: LeadFilters) {
       (!filters.category || lead.category === filters.category) &&
       (!filters.campaignId || lead.campaignId === filters.campaignId) &&
       (!filters.status || lead.status === filters.status) &&
-      (filters.minScore === undefined || lead.score >= filters.minScore) &&
-      (filters.maxScore === undefined || lead.score <= filters.maxScore) &&
+      (filters.minScore === undefined ||
+        (lead.score !== null && lead.score >= filters.minScore)) &&
+      (filters.maxScore === undefined ||
+        (lead.score !== null && lead.score <= filters.maxScore)) &&
       (!filters.site ||
         filters.site === "all" ||
         (filters.site === "with" ? lead.site : !lead.site)) &&
@@ -54,6 +56,10 @@ export function sortLeads(
     const factor = direction === "asc" ? 1 : -1;
     if (sort === "name" || sort === "city")
       return text(a[sort]).localeCompare(text(b[sort]), "pt-BR") * factor;
+    if (sort === "score" && (a.score === null || b.score === null)) {
+      if (a.score === b.score) return 0;
+      return a.score === null ? 1 : -1;
+    }
     const av =
       sort === "createdAt"
         ? Date.parse(a.createdAt ?? "")
@@ -134,7 +140,7 @@ export function exportLeadsCsv(
     lead.city,
     lead.state ?? "",
     lead.category,
-    lead.score,
+    lead.score ?? "Não analisado",
     lead.status,
     lead.provider ?? "",
     campaignName.get(lead.campaignId) ?? "",

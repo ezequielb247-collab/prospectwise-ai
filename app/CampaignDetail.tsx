@@ -183,9 +183,9 @@ export default function CampaignDetail({ data }: { data: Snapshot }) {
                         </td>
                         <td>
                           <span
-                            className={`score ${lead.score > 85 ? "high" : ""}`}
+                            className={`score ${lead.score !== null && lead.score > 85 ? "high" : ""}`}
                           >
-                            {lead.score}
+                            {lead.score ?? "Não analisado"}
                           </span>
                         </td>
                         <td>

@@ -550,7 +550,7 @@ function Campaigns({
                 <b>{campaign.metrics.interested ?? 0}</b> interessados
               </span>
               <span>
-                <b>{campaign.metrics.averageScore ?? 0}</b> score médio
+                <b>{campaign.metrics.averageScore ?? "Não analisado"}</b> score médio
               </span>
               <span>
                 <b>
@@ -931,8 +931,8 @@ function LeadTable({
                 <Company lead={l} />
               </td>
               <td>
-                <span className={`score ${l.score > 85 ? "high" : ""}`}>
-                  {l.score}
+                <span className={`score ${l.score !== null && l.score > 85 ? "high" : ""}`}>
+                  {l.score ?? "Não analisado"}
                 </span>
               </td>
               <td>
@@ -1163,7 +1163,7 @@ function CRM({
                 >
                   <Company lead={lead} />
                   <div>
-                    <span className="score">{lead.score}</span>
+                    <span className="score">{lead.score ?? "Não analisado"}</span>
                     <small>{lead.city}</small>
                   </div>
                   {lead.classification && (
@@ -1308,7 +1308,9 @@ function Messages({
                 {selected.phone} · {selected.city}
               </p>
             </div>
-            <Badge tone="success">Score {selected.score}</Badge>
+            <Badge tone={selected.score === null ? "neutral" : "success"}>
+              {selected.score === null ? "Não analisado" : `Score ${selected.score}`}
+            </Badge>
           </div>
           <div className="lead-context">
             <b>{selected.category}</b>

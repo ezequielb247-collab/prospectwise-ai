@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   reanalyzeCampaign,
   type AnalysisProgress,
@@ -15,6 +16,7 @@ type Summary = {
 };
 
 export default function CampaignIntelligence({ campaignId }: { campaignId: string }) {
+  const router = useRouter();
   const [data, setData] = useState<Summary>();
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState<AnalysisProgress>();
@@ -33,6 +35,7 @@ export default function CampaignIntelligence({ campaignId }: { campaignId: strin
     try {
       await reanalyzeCampaign(campaignId, setProgress);
       await load();
+      router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Falha na reanálise.");
     } finally {

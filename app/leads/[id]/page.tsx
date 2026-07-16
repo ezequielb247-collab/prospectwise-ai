@@ -62,7 +62,7 @@ export default async function Page({
               </Link>
             )}
             <div className="detail-score">
-              <b>{lead.score}</b>
+              <b>{lead.score ?? "Não analisado"}</b>
               <span>
                 Score anterior
                 <br />
@@ -98,11 +98,7 @@ export default async function Page({
               </span>
               <span>
                 <b>
-                  {lead.score >= 70
-                    ? "Alta"
-                    : lead.score >= 40
-                      ? "Média"
-                      : "Baixa"}
+                  {lead.priority ?? "Não analisado"}
                 </b>
                 <small>Prioridade</small>
               </span>
