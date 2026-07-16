@@ -8,8 +8,8 @@ import {
   type WorkspaceData,
   type WorkspaceLead,
 } from "../lib/workspace-model";
-import CampaignMetrics from "./CampaignMetrics";
 import {logoutAction} from "./auth/actions";
+import {dashboardMetrics,exportLeadsCsv,filterLeads,globalSearch,paginate,sortLeads,type LeadSort} from "../lib/workspace-insights";
 const navigation = [
   ["dashboard", "▦", "Visão geral"],
   ["campanhas", "◉", "Campanhas"],
@@ -65,9 +65,12 @@ export default function Workspace({
   const [dark, setDark] = useState(false);
   const [notice, setNotice] = useState("");
   const [active, setActive] = useState(true);
+  const [globalQuery,setGlobalQuery]=useState("");
+  const globalResults=useMemo(()=>globalSearch(data,globalQuery),[data,globalQuery]);
+  useEffect(()=>{const shortcut=(event:KeyboardEvent)=>{if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==="k"){event.preventDefault();document.getElementById("global-search")?.focus()}};window.addEventListener("keydown",shortcut);return()=>window.removeEventListener("keydown",shortcut)},[]);
   const title =
     page === "dashboard"
-      ? "Bom dia, Marco!"
+      ? `Olá, ${user.name.split(" ")[0]}!`
       : page === "crm"
         ? "Pipeline comercial"
         : page === "campanhas"
@@ -128,10 +131,15 @@ export default function Workspace({
           <div className="search">
             ⌕{" "}
             <input
+              id="global-search"
               aria-label="Busca global"
               placeholder="Buscar leads, campanhas..."
+              value={globalQuery}
+              onChange={event=>setGlobalQuery(event.target.value)}
+              onKeyDown={event=>{if(event.key==="Escape")setGlobalQuery("")}}
             />
             <kbd>⌘ K</kbd>
+            {globalQuery&&<div className="global-results" role="listbox" aria-label="Resultados da busca global">{globalResults.campaigns.map(item=><Link key={item.id} href={`/campanhas/${item.id}`} onClick={()=>setGlobalQuery("")}><b>{item.name}</b><small>Campanha · {item.city}</small></Link>)}{globalResults.leads.map(item=><Link key={item.id} href={`/leads/${item.id}`} onClick={()=>setGlobalQuery("")}><b>{item.name}</b><small>{item.phone} · {item.city}</small></Link>)}{!globalResults.leads.length&&!globalResults.campaigns.length&&<span>Nenhum resultado</span>}</div>}
           </div>
           <div className="header-actions">
             <button
@@ -185,18 +193,14 @@ export default function Workspace({
           {page === "dashboard" && (
             <>
               <Dashboard
-                active={active}
-                setActive={setActive}
-                setNotice={setNotice}
-                leads={leads}
+                data={data}
               />
-              <CampaignMetrics campaigns={campaigns} />
             </>
           )}{" "}
           {page === "campanhas" && (
-            <Campaigns campaigns={campaigns} active={active} setActive={setActive} />
+            <Campaigns campaigns={campaigns} active={active} setActive={setActive} setNotice={setNotice} />
           )}{" "}
-          {page === "leads" && <Leads leads={leads} />}{" "}
+          {page === "leads" && <Leads leads={leads} campaigns={campaigns} setNotice={setNotice} />}{" "}
           {page === "crm" && <CRM leads={leads} setNotice={setNotice} />}{" "}
           {page === "mensagens" && (
             <Messages leads={leads} initialLeadId={initialLeadId} setNotice={setNotice} />
@@ -209,33 +213,31 @@ export default function Workspace({
 }
 
 function Dashboard({
-  active,
-  setActive,
-  setNotice,
-  leads,
+  data,
 }: {
-  active: boolean;
-  setActive: (v: boolean) => void;
-  setNotice: (v: string) => void;
-  leads: WorkspaceLead[];
+  data: WorkspaceData;
 }) {
+  const {leads,campaigns,activities}=data;
+  const summary=dashboardMetrics(data);
   const metrics = [
-    ["Leads encontrados", "248", "+12,5%", "♙", "blue"],
-    ["Mensagens preparadas", "64", "+8,2%", "✉", "violet"],
-    ["Mensagens enviadas", "39", "+18,4%", "➤", "green"],
-    ["Taxa de resposta", "23,1%", "+4,3%", "↩", "amber"],
+    ["Campanhas", summary.campaigns, "◉", "blue"],
+    ["Empresas", summary.companies, "♙", "violet"],
+    ["Leads ativos", summary.active, "↗", "green"],
+    ["Interessados", summary.interested, "★", "amber"],
+    ["Clientes", summary.clients, "✓", "green"],
+    ["Taxa de conversão", `${summary.conversion}%`, "%", "blue"],
+    ["Mensagens preparadas", summary.prepared, "✉", "violet"],
+    ["Mensagens respondidas", summary.responded, "↩", "amber"],
   ];
   return (
     <>
       <div className="metrics">
-        {metrics.map(([label, value, change, icon, tone]) => (
+        {metrics.map(([label, value, icon, tone]) => (
           <article className="metric" key={label}>
             <div className={`metric-icon ${tone}`}>{icon}</div>
             <span>{label}</span>
             <h2>{value}</h2>
-            <p>
-              <b>↗ {change}</b> vs. últimos 30 dias
-            </p>
+            <p>Dados atuais da sua operação</p>
           </article>
         ))}
       </div>
@@ -243,96 +245,43 @@ function Dashboard({
         <article className="panel performance">
           <div className="panel-head">
             <div>
-              <h3>Desempenho</h3>
-              <p>Resultados dos últimos 7 dias</p>
+              <h3>Leads por etapa</h3>
+              <p>Distribuição atual do CRM</p>
             </div>
-            <select>
-              <option>Últimos 7 dias</option>
-            </select>
+            <Link href="/crm">Abrir CRM →</Link>
           </div>
           <div className="chart">
             <div className="chart-bars">
-              {[32, 48, 41, 72, 61, 88, 80].map((n, i) => (
-                <i key={i} style={{ height: `${n}%` }}>
-                  <span style={{ height: `${Math.max(12, n / 3)}%` }} />
+              {CRM_STAGES.slice(0,7).map((stage) => {const count=leads.filter(lead=>lead.status===stage).length;const height=leads.length?Math.max(8,Math.round(count/leads.length*100)):8;return (
+                <i key={stage} title={`${stage}: ${count}`} style={{ height: `${height}%` }}>
+                  <span style={{ height: "0" }} />
                 </i>
-              ))}
+              )})}
             </div>
             <div className="days">
-              <span>Seg</span>
-              <span>Ter</span>
-              <span>Qua</span>
-              <span>Qui</span>
-              <span>Sex</span>
-              <span>Sáb</span>
-              <span>Dom</span>
+              {CRM_STAGES.slice(0,7).map(stage=><span key={stage} title={stage}>{stage.slice(0,4)}</span>)}
             </div>
           </div>
           <div className="legend">
             <span>
               <i className="sent" />
-              Mensagens enviadas
+              Quantidade de leads
             </span>
             <span>
               <i className="replies" />
-              Respostas
+              Etapas do CRM
             </span>
           </div>
         </article>
-        <article className="panel campaign-card">
+        <article className="panel campaign-card dashboard-campaigns">
           <div className="panel-head">
             <div>
-              <Badge tone={active ? "success" : "warning"}>
-                ● {active ? "Ativa" : "Pausada"}
-              </Badge>
-              <h3>Clínicas odontológicas</h3>
-              <p>Campinas, SP</p>
+              <h3>Empresas por campanha</h3>
+              <p>Volume distribuído nas campanhas</p>
             </div>
             <button>•••</button>
           </div>
-          <div className="progress-row">
-            <span>Progresso</span>
-            <b>68%</b>
-          </div>
-          <div className="bar">
-            <span />
-          </div>
-          <div className="campaign-stats">
-            <div>
-              <span>Leads</span>
-              <b>
-                68 <small>/ 100</small>
-              </b>
-            </div>
-            <div>
-              <span>Enviadas</span>
-              <b>42</b>
-            </div>
-            <div>
-              <span>Respostas</span>
-              <b>11</b>
-            </div>
-          </div>
-          <div className="next-send">
-            <span>◷</span>
-            <div>
-              <small>Próximo envio</small>
-              <b>{active ? "Hoje, 14:30" : "Campanha pausada"}</b>
-            </div>
-          </div>
-          <button
-            className="secondary full"
-            onClick={() => {
-              setActive(!active);
-              setNotice(
-                active
-                  ? "Campanha pausada com segurança."
-                  : "Campanha reativada no modo simulado.",
-              );
-            }}
-          >
-            {active ? "Ⅱ Pausar campanha" : "▶ Retomar campanha"}
-          </button>
+          <div className="campaign-bars">{campaigns.map(campaign=><div key={campaign.id}><span>{campaign.name}</span><i><b style={{width:`${Math.max(4,campaigns.length?campaign.metrics.companies/Math.max(...campaigns.map(item=>item.metrics.companies),1)*100:0)}%`}}/></i><strong>{campaign.metrics.companies}</strong></div>)}</div>
         </article>
       </div>
       <article className="panel leads-panel">
@@ -345,6 +294,7 @@ function Dashboard({
         </div>
         <LeadTable rows={leads.slice(0, 4)} />
       </article>
+      <article className="panel activity-panel"><div className="panel-head"><div><h3>Últimas atividades</h3><p>Eventos recentes da operação</p></div></div>{activities.filter(item=>["lead_imported","crm_moved","stage_changed","lead_scored","message_created"].includes(item.type)).slice(0,8).map(item=><div className="activity-row" key={item.id}><span>●</span><div><b>{({lead_imported:"Empresa importada",crm_moved:"Lead movido",stage_changed:"Lead movido",lead_scored:"Lead analisado",message_created:"Mensagem criada"} as Record<string,string>)[item.type]??item.type}</b><small>{item.note}</small></div><time>{new Date(item.createdAt).toLocaleString("pt-BR")}</time></div>)}{!activities.length&&<div className="empty small"><p>As próximas ações aparecerão aqui.</p></div>}</article>
     </>
   );
 }
@@ -353,11 +303,14 @@ function Campaigns({
   campaigns,
   active,
   setActive,
+  setNotice,
 }: {
   campaigns: WorkspaceData["campaigns"];
   active: boolean;
   setActive: (v: boolean) => void;
+  setNotice:(value:string)=>void;
 }) {
+  async function duplicate(id:string){const response=await fetch(`/api/campaigns/${id}/duplicate`,{method:"POST"});if(response.ok){setNotice("Campanha duplicada com sucesso.");window.location.reload()}else setNotice("Não foi possível duplicar a campanha.")}
   return (
     <div className="cards-list">
       {campaigns.map((campaign, index) => {
@@ -387,6 +340,9 @@ function Campaigns({
               <span>
                 <b>{campaign.metrics.clients}</b> clientes
               </span>
+              <span><b>{campaign.metrics.interested??0}</b> interessados</span>
+              <span><b>{campaign.metrics.averageScore??0}</b> score médio</span>
+              <span><b>{campaign.lastActivityAt?new Date(campaign.lastActivityAt).toLocaleDateString("pt-BR"):"—"}</b> última atividade</span>
             </div>
             <div className="campaign-actions">
               <Link className="primary" href={`/campanhas/${campaign.id}`}>
@@ -400,6 +356,7 @@ function Campaigns({
                   {active ? "Pausar" : "Retomar"}
                 </button>
               )}
+              <button className="secondary" onClick={()=>void duplicate(campaign.id)}>Duplicar</button>
             </div>
           </article>
         );
@@ -415,36 +372,45 @@ function Campaigns({
     </div>
   );
 }
-function Leads({ leads }: { leads: WorkspaceLead[] }) {
-  const [query, setQuery] = useState("");
-  const filtered = useMemo(
-    () =>
-      leads.filter((l) => l.name.toLowerCase().includes(query.toLowerCase())),
-    [query, leads],
-  );
+function Leads({ leads,campaigns,setNotice }: { leads: WorkspaceLead[];campaigns:WorkspaceData["campaigns"];setNotice:(value:string)=>void }) {
+  const [query,setQuery]=useState("");const [city,setCity]=useState("");const [state,setState]=useState("");const [category,setCategory]=useState("");const [campaignId,setCampaignId]=useState("");const [status,setStatus]=useState("");const [minScore,setMinScore]=useState("");const [maxScore,setMaxScore]=useState("");const [site,setSite]=useState<"all"|"with"|"without">("all");const [phone,setPhone]=useState<"all"|"with"|"without">("all");const [sort,setSort]=useState<LeadSort>("createdAt");const [direction,setDirection]=useState<"asc"|"desc">("desc");const [page,setPage]=useState(1);const [pageSize,setPageSize]=useState(10);
+  const cities=useMemo(()=>[...new Set(leads.map(item=>item.city).filter(Boolean))].sort(),[leads]);const states=useMemo(()=>[...new Set(leads.map(item=>item.state).filter(Boolean))].sort(),[leads]);const categories=useMemo(()=>[...new Set(leads.map(item=>item.category).filter(Boolean))].sort(),[leads]);
+  const filtered=useMemo(()=>sortLeads(filterLeads(leads,{query,city,state,category,campaignId,status,minScore:minScore?Number(minScore):undefined,maxScore:maxScore?Number(maxScore):undefined,site,phone}),sort,direction),[leads,query,city,state,category,campaignId,status,minScore,maxScore,site,phone,sort,direction]);
+  const paged=useMemo(()=>paginate(filtered,page,pageSize),[filtered,page,pageSize]);
+  function exportCsv(scope:"filtered"|"all"|"campaign"){const selected=scope==="all"?leads:scope==="campaign"?leads.filter(item=>item.campaignId===campaignId):filtered;if(scope==="campaign"&&!campaignId){setNotice("Selecione uma campanha para exportar.");return}const blob=new Blob(["\uFEFF",exportLeadsCsv(selected,campaigns)],{type:"text/csv;charset=utf-8"});const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download="prospectwise-leads.csv";link.click();URL.revokeObjectURL(url);}
   return (
     <article className="panel leads-panel">
-      <div className="filters">
+      <div className="filters lead-filters">
         <div className="search wide">
           ⌕{" "}
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar empresa..."
+            placeholder="Buscar nome, telefone, cidade ou categoria..."
+            aria-label="Busca rápida de leads"
           />
         </div>
-        <select>
-          <option>Todos os status</option>
-        </select>
-        <select>
-          <option>Maior score</option>
-        </select>
+        <select aria-label="Filtrar por cidade" value={city} onChange={e=>setCity(e.target.value)}><option value="">Todas as cidades</option>{cities.map(item=><option key={item}>{item}</option>)}</select>
+        <select aria-label="Filtrar por estado" value={state} onChange={e=>setState(e.target.value)}><option value="">Todos os estados</option>{states.map(item=><option key={item}>{item}</option>)}</select>
+        <select aria-label="Filtrar por categoria" value={category} onChange={e=>setCategory(e.target.value)}><option value="">Todas as categorias</option>{categories.map(item=><option key={item}>{item}</option>)}</select>
+        <select aria-label="Filtrar por campanha" value={campaignId} onChange={e=>setCampaignId(e.target.value)}><option value="">Todas as campanhas</option>{campaigns.map(item=><option value={item.id} key={item.id}>{item.name}</option>)}</select>
+        <select aria-label="Filtrar por status CRM" value={status} onChange={e=>setStatus(e.target.value)}><option value="">Todos os status</option>{CRM_STAGES.map(item=><option key={item}>{item}</option>)}</select>
+        <input aria-label="Score mínimo" type="number" min="0" max="100" placeholder="Score mín." value={minScore} onChange={e=>setMinScore(e.target.value)}/><input aria-label="Score máximo" type="number" min="0" max="100" placeholder="Score máx." value={maxScore} onChange={e=>setMaxScore(e.target.value)}/>
+        <select aria-label="Filtrar por site" value={site} onChange={e=>setSite(e.target.value as typeof site)}><option value="all">Todos os sites</option><option value="with">Com site</option><option value="without">Sem site</option></select>
+        <select aria-label="Filtrar por telefone" value={phone} onChange={e=>setPhone(e.target.value as typeof phone)}><option value="all">Todos os telefones</option><option value="with">Com telefone</option><option value="without">Sem telefone</option></select>
+        <select aria-label="Ordenar leads" value={sort} onChange={e=>setSort(e.target.value as LeadSort)}><option value="name">Nome</option><option value="city">Cidade</option><option value="score">Score</option><option value="createdAt">Data de importação</option><option value="reviews">Avaliações</option><option value="rating">Nota</option></select><button className="secondary" aria-label="Inverter ordenação" onClick={()=>setDirection(value=>value==="asc"?"desc":"asc")}>{direction==="asc"?"↑ Crescente":"↓ Decrescente"}</button>
+        <details className="export-menu"><summary className="secondary">Exportar CSV</summary><button onClick={()=>exportCsv("all")}>Todos</button><button onClick={()=>exportCsv("filtered")}>Filtrados</button><button onClick={()=>exportCsv("campaign")}>Campanha atual</button></details>
       </div>
-      <LeadTable rows={filtered} />
+      <LeadTable rows={paged.items} editable setNotice={setNotice} />
+      <div className="pagination table-pagination"><span>{paged.total} registros</span><label>Por página <select value={pageSize} onChange={e=>setPageSize(Number(e.target.value))}>{[10,25,50,100].map(size=><option key={size}>{size}</option>)}</select></label><button disabled={paged.page===1} onClick={()=>setPage(value=>value-1)}>Anterior</button><span>Página {paged.page} de {paged.pages}</span><button disabled={paged.page===paged.pages} onClick={()=>setPage(value=>value+1)}>Próxima</button></div>
     </article>
   );
 }
-function LeadTable({ rows }: { rows: WorkspaceLead[] }) {
+function LeadTable({ rows,editable=false,setNotice }: { rows: WorkspaceLead[];editable?:boolean;setNotice?:(value:string)=>void }) {
+  const [editing,setEditing]=useState<WorkspaceLead>();const [hidden,setHidden]=useState<string[]>([]);
+  async function save(event:FormEvent<HTMLFormElement>){event.preventDefault();if(!editing)return;const form=new FormData(event.currentTarget);const response=await fetch(`/api/leads/${editing.id}`,{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({name:form.get("name"),phone:form.get("phone")||null,website:form.get("website")||null,city:form.get("city")||null,state:form.get("state")||null,category:form.get("category")||null,notes:form.get("notes")||null,status:form.get("status")})});if(response.ok){setNotice?.("Lead atualizado e atividade registrada.");setEditing(undefined);window.location.reload()}else setNotice?.("Não foi possível atualizar o lead.")}
+  async function remove(lead:WorkspaceLead){if(!window.confirm(`Excluir ${lead.name}? Esta ação não pode ser desfeita.`))return;const response=await fetch(`/api/leads/${lead.id}`,{method:"DELETE"});if(response.ok){setHidden(current=>[...current,lead.id]);setNotice?.("Lead excluído; o histórico foi preservado.")}else setNotice?.("Não foi possível excluir o lead.")}
+  const visible=rows.filter(row=>!hidden.includes(row.id));
   return (
     <div className="table-wrap">
       <table>
@@ -459,7 +425,7 @@ function LeadTable({ rows }: { rows: WorkspaceLead[] }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((l) => (
+          {visible.map((l) => (
             <tr key={l.id}>
               <td>
                 <Company lead={l} />
@@ -496,17 +462,19 @@ function LeadTable({ rows }: { rows: WorkspaceLead[] }) {
                 <Link href={`/leads/${l.id}`} className="details-link">
                   Ver detalhes
                 </Link>
+                {editable&&<div className="row-actions"><button onClick={()=>setEditing(l)}>Editar</button><button className="danger-link" onClick={()=>void remove(l)}>Excluir</button></div>}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-      {!rows.length && (
+      {!visible.length && (
         <div className="empty small">
           <h3>Nenhum lead encontrado</h3>
           <p>Tente buscar outro nome.</p>
         </div>
       )}
+      {editing&&<div className="modal-backdrop" role="presentation" onMouseDown={()=>setEditing(undefined)}><form className="panel lead-modal" role="dialog" aria-modal="true" aria-label={`Editar ${editing.name}`} onSubmit={save} onMouseDown={event=>event.stopPropagation()}><div className="panel-head"><div><h3>Editar lead</h3><p>O score é calculado pelas regras e não pode ser alterado manualmente.</p></div><button type="button" className="icon-button" aria-label="Fechar" onClick={()=>setEditing(undefined)}>×</button></div><label>Nome<input name="name" required defaultValue={editing.name}/></label><div className="row"><label>Telefone<input name="phone" defaultValue={editing.phone==="—"?"":editing.phone}/></label><label>Site<input name="website" type="url" defaultValue={editing.website??""}/></label></div><div className="row"><label>Cidade<input name="city" defaultValue={editing.city.split(",")[0]}/></label><label>Estado<input name="state" maxLength={2} defaultValue={editing.state??""}/></label></div><label>Categoria<input name="category" defaultValue={editing.category}/></label><label>Status CRM<select name="status" defaultValue={editing.status}>{CRM_STAGES.map(stage=><option key={stage}>{stage}</option>)}</select></label><label>Observações<textarea name="notes" defaultValue={editing.notes??""}/></label><div className="editor-actions"><button type="button" className="secondary" onClick={()=>setEditing(undefined)}>Cancelar</button><button className="primary">Salvar alterações</button></div></form></div>}
     </div>
   );
 }
