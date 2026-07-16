@@ -1,5 +1,11 @@
 # Backlog
 
+## Sprint 10
+
+- [x] Motor v2 e módulos comerciais manuais.
+- [ ] Aplicar e validar a migration Sprint 10 no Supabase.
+- [ ] Habilitar providers pagos somente após credencial e autorização.
+
 ## Sprint 9
 
 - [x] Tarefas e Agenda comercial.

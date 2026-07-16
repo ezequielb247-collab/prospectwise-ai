@@ -1,5 +1,11 @@
 # ProspectWise AI
 
+## Sprint 10 — Motor Comercial Completo
+
+Novos módulos: `/listas`, `/prospeccao`, `/propostas` e `/respostas`. Aplique `supabase/migrations/202607160009_sprint10_commercial_engine.sql` antes de usá-los no Supabase real. Nenhum envio externo foi implementado.
+
+Variáveis opcionais e exclusivamente server-side: `GOOGLE_PLACES_API_KEY` e `OUTSCRAPER_API_KEY`. Sem chave e feature flag, o provider fica desativado; chamadas pagas exigem confirmação explícita.
+
 ## Sprint 9.5 — produção
 
 O projeto está preparado para desenvolvimento local com Vinext e para produção na Vercel com Next.js nativo. A implantação exige Node.js 22.13 ou superior e estas variáveis:

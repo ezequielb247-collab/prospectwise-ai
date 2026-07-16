@@ -1,5 +1,9 @@
 # Arquitetura
 
+## Motor comercial Sprint 10
+
+`UI → API autenticada → Service → Repository → Supabase`. Componentes client recebem apenas dados serializáveis. As entidades novas são isoladas por `user_id` e RLS; `lead_analyses` permanece a fonte oficial do score.
+
 ## Lead Intelligence
 
 ```text

@@ -1,5 +1,12 @@
 # Changelog
 
+## Sprint 10 — Motor Comercial Completo
+
+- Inteligência v2 explicável; listas e ações em massa; presença digital manual.
+- Mensagens v2 com CTA e variante A/B; prospecção manual com limite diário.
+- Propostas sem preço inventado; objeções; dashboard; onboarding e configurações.
+- Providers pagos protegidos por credencial, feature flag e confirmação explícita.
+
 ## Sprint 9.5 — Produção e Primeiro Uso Real
 
 - Build Next.js dedicado à Vercel, mantendo o fluxo Vinext local.

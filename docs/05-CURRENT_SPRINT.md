@@ -1,28 +1,10 @@
-# Sprint 9.5 — Produção e Primeiro Uso Real
+# Sprint 10 — Motor Comercial Completo
 
-**Status:** Em andamento
-**Objetivo:** Publicar, validar e começar a usar o ProspectWise com empresas reais.
+**Status:** Concluída localmente — migration pendente de aplicação
 
-## Escopo
+Qualificação v2, presença digital manual, listas, ações em massa, mensagens personalizadas, prospecção manual, propostas, objeções, dashboard executivo, onboarding e configurações comerciais foram implementados.
 
-- Preparar o build Next.js para a Vercel sem remover o fluxo Vinext local.
-- Publicar o histórico existente em um repositório privado, sem reescrita.
-- Configurar o Supabase Auth para a URL pública e validar cookies, redirects e RLS.
-- Validar os fluxos essenciais em produção e executar a primeira campanha real por CSV.
-- Corrigir somente falhas encontradas na preparação e validação de produção.
-
-## Restrições
-
-Não conectar APIs externas, OpenAI, WhatsApp, Meta, Evolution, Twilio, e-mail, cron ou worker. Nenhuma mensagem será enviada automaticamente.
-
-## Estado da publicação
-
-- Build local Vinext e build nativo Next/Vercel preparados.
-- Checklist de produção e roteiro da primeira campanha criados.
-- Repositório privado publicado em `ezequielb247-collab/prospectwise-ai`, branch `main`.
-- Produção publicada em `https://prospectwise-ai.vercel.app`.
-- Rotas privadas e headers de segurança validados sem sessão.
-- Correção de produção do preview CSV: consulta mínima para deduplicação e diagnóstico seguro no servidor.
-- Diagnóstico do commit CSV ampliado sem alterar regras, validações, RLS, schema ou importação.
-- Migration `202607160008_fix_import_csv_rpc.sql` aplicada e importador CSV validado no ambiente real: preview OK, commit HTTP 200 e uma empresa importada sem erros.
-- Validação autenticada e configuração do Supabase Auth aguardam acesso ao painel e rotação preventiva da service role.
+- Nenhuma mensagem é enviada automaticamente.
+- Google Places e Outscraper ficam desativados sem flag, credencial e confirmação.
+- CSV e colagem permanecem gratuitos.
+- `202607160009_sprint10_commercial_engine.sql` ainda precisa ser aplicada e validada no Supabase.

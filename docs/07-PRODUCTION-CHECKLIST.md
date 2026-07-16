@@ -1,5 +1,12 @@
 # Checklist de Produção
 
+## Sprint 10
+
+- [ ] Aplicar `202607160009_sprint10_commercial_engine.sql`.
+- [ ] Confirmar RLS e `anon` revogado nas tabelas novas.
+- [ ] Validar isolamento com dois usuários.
+- [ ] Manter providers pagos desativados sem credenciais.
+
 ## 1. Git e segredos
 
 - [x] O repositório GitHub é privado e a branch de produção é `main`.

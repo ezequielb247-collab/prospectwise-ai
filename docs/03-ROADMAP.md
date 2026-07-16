@@ -1,5 +1,9 @@
 # Roadmap
 
+## Sprint 10 — Motor Comercial Completo — concluída localmente
+
+Ativação em produção pendente da migration e validação real no Supabase. Providers pagos permanecem apenas preparados.
+
 ## Sprint 7 — concluída
 
 Sistema completo para preparar e organizar mensagens comerciais sem envio externo. A integração com canais permanece posterior e obrigatoriamente isolada por adaptadores.

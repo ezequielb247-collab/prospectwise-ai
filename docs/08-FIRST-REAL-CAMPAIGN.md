@@ -1,5 +1,9 @@
 # Primeira Campanha Real
 
+## Fluxo Sprint 10
+
+CSV → análise → Radar → lista → mensagem revisada → prospecção manual → follow-up → proposta com preço informado pelo usuário.
+
 ## Preparação
 
 **Nome:** Prospecção inicial — Macaé  
