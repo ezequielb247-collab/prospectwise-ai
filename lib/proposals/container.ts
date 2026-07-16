@@ -1,0 +1,1 @@
+import"server-only";import{createSupabaseServerClient}from"../supabase/server";import{ProposalService}from"./service";import{SupabaseProposalRepository}from"./supabase-repository";export async function proposals(){return new ProposalService(new SupabaseProposalRepository(await createSupabaseServerClient()))}
