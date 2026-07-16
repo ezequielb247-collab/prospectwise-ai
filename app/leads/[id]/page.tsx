@@ -66,6 +66,9 @@ export default async function Page({
             >
               Preparar mensagem
             </Link>
+            <Link className="secondary full" href={`/follow-ups?leadId=${lead.id}`}>
+              Ver follow-ups
+            </Link>
           </div>
           <LeadIntelligencePanel leadId={lead.id} />
         </div>

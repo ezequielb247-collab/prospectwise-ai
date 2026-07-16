@@ -198,6 +198,14 @@ export default function MessageCenter({
     const next = window.prompt("Edite o conteúdo da mensagem:", selected.body);
     if (next?.trim()) await patch(selected.id, { action: "edit", body: next });
   }
+  async function scheduleSelected() {
+    if (!selected || selected.status !== "approved") return;
+    const value = window.prompt("Data e hora para a fila:", new Date(Date.now() + 86400000).toISOString().slice(0, 16));
+    if (!value) return;
+    const response = await fetch("/api/queue", {method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"schedule",campaignId:selected.campaignId,leadId:selected.leadId,messageId:selected.id,scheduledFor:new Date(value).toISOString()})});
+    const result=await response.json();
+    if(response.ok)setNotice(result.preview.reasons.length?`Agendada. ${result.preview.reasons.join(" ")}`:"Mensagem agendada na fila simulada.");else setNotice(result.error);
+  }
   function exportCsv() {
     const campaignNames = new Map(
       data.campaigns.map((item) => [item.id, item.name]),
@@ -562,6 +570,7 @@ export default function MessageCenter({
               <button className="secondary" onClick={() => void editSelected()}>
                 Editar
               </button>
+              {selected.status === "approved" && <button className="secondary" onClick={() => void scheduleSelected()}>Agendar na fila</button>}
               {selected.status !== "draft" && (
                 <button
                   className="secondary"

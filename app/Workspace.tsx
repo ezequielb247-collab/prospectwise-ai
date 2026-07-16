@@ -18,6 +18,8 @@ const navigation = [
   ["radar", "◎", "Radar"],
   ["crm", "▥", "CRM"],
   ["mensagens", "✉", "Mensagens"],
+  ["follow-ups", "◷", "Follow-ups"],
+  ["fila", "≡", "Fila"],
   ["configuracoes", "⚙", "Configurações"],
 ];
 const subtitles: Record<string, string> = {

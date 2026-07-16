@@ -8,6 +8,13 @@
 - [x] Geração em lote, painel, filtros, detalhes e exportação CSV.
 - [ ] Envio real por WhatsApp, e-mail ou outro canal (fora desta sprint).
 
+## Sprint 8 — Follow-up e Fila Controlada
+
+- [x] Follow-ups persistentes, regras de tentativas e reagendamento.
+- [x] Fila organizacional para mensagens aprovadas.
+- [x] Janelas, dias permitidos, timezone e limites diários.
+- [ ] Worker, cron e envio externo (fora desta sprint).
+
 ## Próximas entregas
 
 - Aplicar a migration Sprint 5 no projeto Supabase definitivo e importar os dados D1 exportados.

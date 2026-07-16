@@ -37,3 +37,11 @@ MessageCenter → API interna → MessageService → MessageTemplateEngine
 ```
 
 O engine é puro, aceita somente variáveis declaradas e nunca executa conteúdo do template. O serviço valida campanha, propriedade, opt-out, duplicidade e transições. Nenhum componente cliente importa Supabase e não existe provider de envio nesta sprint.
+
+## Follow-up e fila controlada
+
+```text
+UI → API interna → FollowUpService / QueueService → Repository → Supabase + RLS
+```
+
+A fila é exclusivamente organizacional. Ajustes de horário são determinísticos e nenhuma camada possui worker, cron ou integração de envio.

@@ -4,6 +4,10 @@
 
 Execute `supabase/migrations/202607160005_commercial_messages.sql` no SQL Editor do Supabase. Depois, abra Mensagens e use “Criar templates iniciais”. O sistema prepara, revisa e aprova abordagens, mas não envia mensagens e não utiliza OpenAI, WhatsApp, e-mail ou APIs externas.
 
+## Sprint 8 — follow-up e fila controlada
+
+Execute `supabase/migrations/202607160006_follow_up_queue.sql`. As páginas `/follow-ups` e `/fila` organizam ações futuras manualmente; não existe worker, cron ou envio externo.
+
 ## Sprint 5 — Supabase
 
 1. Crie um projeto no Supabase.

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import CampaignIntelligence from "./CampaignIntelligence";
+import CampaignFollowUpSettings from "./CampaignFollowUpSettings";
 import type {CampaignDetailData} from "../lib/workspace-model";
 type Snapshot = CampaignDetailData;
 export default function CampaignDetail({ data }: { data: Snapshot }) {
@@ -46,6 +47,12 @@ export default function CampaignDetail({ data }: { data: Snapshot }) {
             <Link className="secondary compact" href={`/mensagens?campaignId=${campaign.id}`}>
               Gerar mensagens
             </Link>
+            <Link className="secondary compact" href={`/follow-ups?campaignId=${campaign.id}`}>
+              Follow-ups
+            </Link>
+            <Link className="secondary compact" href={`/fila?campaignId=${campaign.id}`}>
+              Fila
+            </Link>
             <Link className="primary compact" href={`/leads/buscar?campaignId=${campaign.id}`}>
               ⌕ Buscar empresas
             </Link>
@@ -80,6 +87,7 @@ export default function CampaignDetail({ data }: { data: Snapshot }) {
               </article>
             ))}
           </div>
+          <CampaignFollowUpSettings campaignId={campaign.id}/>
           <div className="grid-two campaign-overview">
             <article className="panel">
               <div className="panel-head">
