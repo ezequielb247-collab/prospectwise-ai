@@ -16,28 +16,37 @@ export default function ManualProspectingPanel({
   sourceName?: string | null;
 }) {
   const allowed = useMemo(() => new Set(data.leads.map((lead) => lead.id)), [data.leads]);
-  const listIds = useMemo(() => [...new Set(initialLeadIds.filter((id) => allowed.has(id)))], [initialLeadIds, allowed]);
+  const listIds = useMemo(
+    () => [...new Set(initialLeadIds.filter((id) => allowed.has(id)))],
+    [initialLeadIds, allowed],
+  );
   const [index, setIndex] = useState(0);
   const [campaign, setCampaign] = useState("");
-  const [body, setBody] = useState("");
+  const [editedBodies, setEditedBodies] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState("");
   const [messages, setMessages] = useState<CommercialMessage[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(true);
 
   useEffect(() => {
+    let active = true;
     fetch("/api/messages", { cache: "no-store" })
       .then((response) => response.json().then((payload) => ({ response, payload })))
       .then(({ response, payload }) => {
-        if (response.ok) setMessages(payload.messages ?? []);
+        if (active && response.ok) setMessages(payload.messages ?? []);
       })
-      .finally(() => setLoadingMessages(false));
+      .catch(() => {
+        if (active) setNotice("Não foi possível carregar as mensagens salvas.");
+      })
+      .finally(() => {
+        if (active) setLoadingMessages(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const sourceLeads = useMemo(
-    () =>
-      data.leads.filter((item) =>
-        listIds.length ? listIds.includes(item.id) : true,
-      ),
+    () => data.leads.filter((item) => (listIds.length ? listIds.includes(item.id) : true)),
     [data.leads, listIds],
   );
   const leads = useMemo(
@@ -59,19 +68,25 @@ export default function ManualProspectingPanel({
             .filter((item) => item.leadId === lead.id && item.status !== "cancelled")
             .sort((a, b) => {
               const rank: Record<string, number> = { approved: 4, prepared: 3, draft: 2 };
-              return (rank[b.status] ?? 0) - (rank[a.status] ?? 0) || b.updatedAt.localeCompare(a.updatedAt);
+              return (
+                (rank[b.status] ?? 0) - (rank[a.status] ?? 0) ||
+                b.updatedAt.localeCompare(a.updatedAt)
+              );
             })[0]
         : undefined,
     [messages, lead],
   );
+  const body = lead ? (editedBodies[lead.id] ?? latestMessage?.body ?? "") : "";
 
-  useEffect(() => {
-    setBody(latestMessage?.body ?? "");
-  }, [lead?.id, latestMessage?.id]);
+  function setBody(value: string) {
+    if (!lead) return;
+    setEditedBodies((current) => ({ ...current, [lead.id]: value }));
+  }
 
   function next() {
     setIndex((current) => Math.min(current + 1, Math.max(0, leads.length - 1)));
   }
+
   function previous() {
     setIndex((current) => Math.max(0, current - 1));
   }
@@ -88,7 +103,10 @@ export default function ManualProspectingPanel({
       body: JSON.stringify({ action: "prepare", leadId: lead.id, body }),
     });
     const result = await response.json();
-    if (!response.ok) return setNotice(result.error);
+    if (!response.ok) {
+      setNotice(result.error ?? "Falha ao preparar o contato.");
+      return;
+    }
     window.open(result.url, "_blank", "noopener,noreferrer");
     setNotice("WhatsApp aberto. Depois de enviar manualmente, registre o resultado abaixo.");
   }
@@ -109,7 +127,7 @@ export default function ManualProspectingPanel({
     setNotice(
       response.ok
         ? `Contato ${payload.count}/${payload.limit} registrado para ${lead.name}.`
-        : payload.error,
+        : payload.error ?? "Falha ao registrar contato.",
     );
     if (response.ok) next();
   }
@@ -124,6 +142,7 @@ export default function ManualProspectingPanel({
           Lista ativa: <strong>{sourceName}</strong> · {listIds.length} {listIds.length === 1 ? "lead" : "leads"}.
         </InlineAlert>
       )}
+
       <div className="commercial-toolbar">
         <FormField id="prospecting-campaign" label="Campanha">
           <select
@@ -144,6 +163,7 @@ export default function ManualProspectingPanel({
         </FormField>
         <span className="badge warning">Limite padrão: 10/dia</span>
       </div>
+
       {lead ? (
         <SectionCard>
           <div className="panel-head">
@@ -180,7 +200,12 @@ export default function ManualProspectingPanel({
             <button
               type="button"
               disabled={!body.trim()}
-              onClick={() => void navigator.clipboard.writeText(body).then(() => setNotice("Mensagem copiada."))}
+              onClick={() =>
+                void navigator.clipboard
+                  .writeText(body)
+                  .then(() => setNotice("Mensagem copiada."))
+                  .catch(() => setNotice("Não foi possível copiar a mensagem."))
+              }
             >
               Copiar mensagem
             </button>
@@ -204,10 +229,15 @@ export default function ManualProspectingPanel({
       ) : (
         <EmptyState
           title="Nenhum lead disponível"
-          description={sourceName ? "Todos os leads desta lista estão bloqueados, concluídos ou não atendem ao filtro atual." : "Ajuste a campanha ou importe novas oportunidades."}
+          description={
+            sourceName
+              ? "Todos os leads desta lista estão bloqueados, concluídos ou não atendem ao filtro atual."
+              : "Ajuste a campanha ou importe novas oportunidades."
+          }
           action={<Link className="primary" href="/radar">Abrir Radar</Link>}
         />
       )}
+
       {notice && (
         <InlineAlert tone={/registrado|copiada|aberto/i.test(notice) ? "success" : "error"}>
           {notice}
