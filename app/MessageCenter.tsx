@@ -8,6 +8,7 @@ import type {
   ValidationIssue,
 } from "../lib/messages/types";
 import type { WorkspaceData } from "../lib/workspace-model";
+
 const labels: Record<string, string> = {
   draft: "Rascunho",
   prepared: "Preparada",
@@ -22,35 +23,52 @@ const labels: Record<string, string> = {
   closing: "Encerramento",
   opt_out_confirmation: "Confirmação de opt-out",
 };
+
 const csvCell = (value: unknown) =>
   `"${String(value ?? "")
     .replace(/^([=+\-@])/, "'$1")
     .replace(/"/g, '""')}"`;
+
+type DraftState = { body: string; warnings: ValidationIssue[] };
+
 export default function MessageCenter({
   data,
   setNotice,
+  initialLeadIds = [],
 }: {
   data: WorkspaceData;
   setNotice: (value: string) => void;
+  initialLeadIds?: string[];
 }) {
-  const [messages, setMessages] = useState<CommercialMessage[]>([]),
-    [templates, setTemplates] = useState<Template[]>([]),
-    [loading, setLoading] = useState(true),
-    [campaignId, setCampaignId] = useState(""),
-    [leadId, setLeadId] = useState(""),
-    [templateId, setTemplateId] = useState(""),
-    [body, setBody] = useState(""),
-    [warnings, setWarnings] = useState<ValidationIssue[]>([]),
-    [selected, setSelected] = useState<CommercialMessage>(),
-    [checked, setChecked] = useState<string[]>([]),
-    [query, setQuery] = useState(""),
-    [status, setStatus] = useState(""),
-    [channel, setChannel] = useState(""),
-    [type, setType] = useState(""),
-    [sort, setSort] = useState("newest");
+  const allowedLeadIds = useMemo(
+    () => new Set(data.leads.map((lead) => lead.id)),
+    [data.leads],
+  );
+  const initialIds = useMemo(
+    () => [...new Set(initialLeadIds.filter((id) => allowedLeadIds.has(id)))],
+    [initialLeadIds, allowedLeadIds],
+  );
+  const firstInitialLead = data.leads.find((lead) => lead.id === initialIds[0]);
+
+  const [messages, setMessages] = useState<CommercialMessage[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [campaignId, setCampaignId] = useState(firstInitialLead?.campaignId ?? "");
+  const [leadId, setLeadId] = useState(firstInitialLead?.id ?? "");
+  const [templateId, setTemplateId] = useState("");
+  const [drafts, setDrafts] = useState<Record<string, DraftState>>({});
+  const [selected, setSelected] = useState<CommercialMessage>();
+  const [checked, setChecked] = useState<string[]>(initialIds);
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("");
+  const [channel, setChannel] = useState("");
+  const [type, setType] = useState("");
+  const [sort, setSort] = useState("newest");
+  const [bulkBusy, setBulkBusy] = useState(false);
+
   async function load() {
     setLoading(true);
-    const response = await fetch("/api/messages");
+    const response = await fetch("/api/messages", { cache: "no-store" });
     if (response.ok) {
       const payload = await response.json();
       setMessages(payload.messages);
@@ -58,12 +76,36 @@ export default function MessageCenter({
     }
     setLoading(false);
   }
+
   useEffect(() => {
     void load();
   }, []);
+
   const campaignLeads = data.leads.filter(
     (lead) => lead.campaignId === campaignId,
   );
+  const batchLeads = data.leads.filter((lead) => checked.includes(lead.id));
+  const currentKey = leadId && templateId ? `${leadId}:${templateId}` : "";
+  const persistedCurrent = useMemo(
+    () =>
+      messages
+        .filter(
+          (item) =>
+            item.leadId === leadId &&
+            item.templateId === templateId &&
+            item.status !== "cancelled",
+        )
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0],
+    [messages, leadId, templateId],
+  );
+  const currentDraft: DraftState =
+    (currentKey ? drafts[currentKey] : undefined) ??
+    (persistedCurrent
+      ? { body: persistedCurrent.body, warnings: persistedCurrent.warnings }
+      : { body: "", warnings: [] });
+  const body = currentDraft.body;
+  const warnings = currentDraft.warnings;
+
   const filtered = useMemo(
     () =>
       messages
@@ -100,6 +142,28 @@ export default function MessageCenter({
       sort,
     ],
   );
+
+  function setCurrentDraft(next: DraftState) {
+    if (!currentKey) return;
+    setDrafts((current) => ({ ...current, [currentKey]: next }));
+  }
+
+  function selectLead(nextLeadId: string) {
+    const lead = data.leads.find((item) => item.id === nextLeadId);
+    if (lead) setCampaignId(lead.campaignId);
+    setLeadId(nextLeadId);
+  }
+
+  function latestMessageForLead(nextLeadId: string) {
+    return messages
+      .filter(
+        (item) =>
+          item.leadId === nextLeadId &&
+          (!templateId || item.templateId === templateId),
+      )
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
+  }
+
   async function request(payload: object) {
     const response = await fetch("/api/messages", {
       method: "POST",
@@ -110,9 +174,14 @@ export default function MessageCenter({
     if (!response.ok) throw new Error(result.error);
     return result;
   }
+
   async function preview() {
     if (!leadId) {
       setNotice("Selecione um lead para gerar a mensagem.");
+      return;
+    }
+    if (!templateId) {
+      setNotice("Selecione um template para gerar a mensagem.");
       return;
     }
     try {
@@ -122,28 +191,37 @@ export default function MessageCenter({
         campaignId,
         templateId,
       });
-      setBody(result.body);
-      setWarnings(result.warnings);
+      setCurrentDraft({ body: result.body, warnings: result.warnings });
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Falha na prévia.");
     }
   }
-  async function create(status: "draft" | "prepared", allowDuplicate = false) {
+
+  async function create(nextStatus: "draft" | "prepared", allowDuplicate = false) {
     if (!leadId) {
       setNotice("Selecione um lead para gerar a mensagem.");
       return;
     }
+    if (!templateId) {
+      setNotice("Selecione um template.");
+      return;
+    }
     try {
-      await request({
+      const created = (await request({
         action: "create",
         leadId,
         campaignId,
         templateId,
         body,
-        status,
+        status: nextStatus,
         allowDuplicate,
-      });
-      setNotice(status === "draft" ? "Rascunho salvo." : "Mensagem preparada.");
+      })) as CommercialMessage;
+      setCurrentDraft({ body: created.body, warnings: created.warnings });
+      setNotice(
+        nextStatus === "draft"
+          ? `Rascunho de ${created.leadName ?? "empresa"} salvo.`
+          : `Mensagem de ${created.leadName ?? "empresa"} preparada.`,
+      );
       await load();
     } catch (error) {
       const message =
@@ -152,27 +230,54 @@ export default function MessageCenter({
         message.includes("Confirme") &&
         window.confirm(`${message} Deseja continuar?`)
       )
-        return create(status, true);
+        return create(nextStatus, true);
       setNotice(message);
     }
   }
+
   async function bulk() {
+    if (!templateId) {
+      setNotice("Selecione um template para gerar o lote.");
+      return;
+    }
+    const uniqueLeadIds = [...new Set(checked)].filter((id) => allowedLeadIds.has(id));
+    if (!uniqueLeadIds.length) {
+      setNotice("Selecione pelo menos um lead para o lote.");
+      return;
+    }
+
+    setBulkBusy(true);
     try {
-      const result = await request({
-        action: "bulk",
-        campaignId,
-        leadIds: checked,
-        templateId,
-      });
-      setNotice(
-        `${result.created.length} mensagens geradas; ${result.skipped.length} ignoradas.`,
-      );
-      setChecked([]);
+      const groups = new Map<string, string[]>();
+      for (const id of uniqueLeadIds) {
+        const lead = data.leads.find((item) => item.id === id);
+        if (!lead) continue;
+        groups.set(lead.campaignId, [...(groups.get(lead.campaignId) ?? []), id]);
+      }
+
+      let createdCount = 0;
+      const skipped: string[] = [];
+      for (const [groupCampaignId, leadIds] of groups) {
+        const result = await request({
+          action: "bulk",
+          campaignId: groupCampaignId,
+          leadIds,
+          templateId,
+        });
+        createdCount += result.created.length;
+        skipped.push(...result.skipped);
+      }
       await load();
+      setNotice(
+        `${createdCount} ${createdCount === 1 ? "rascunho salvo" : "rascunhos salvos"}; ${skipped.length} ${skipped.length === 1 ? "lead ignorado" : "leads ignorados"}.`,
+      );
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Falha no lote.");
+    } finally {
+      setBulkBusy(false);
     }
   }
+
   async function patch(id: string, payload: object) {
     const response = await fetch(`/api/messages/${id}`, {
       method: "PATCH",
@@ -185,10 +290,12 @@ export default function MessageCenter({
       await load();
     } else setNotice(result.error);
   }
+
   async function seed() {
     await request({ action: "seed" });
     await load();
   }
+
   async function editSelected() {
     if (!selected) return;
     if (selected.status === "approved") {
@@ -198,14 +305,35 @@ export default function MessageCenter({
     const next = window.prompt("Edite o conteúdo da mensagem:", selected.body);
     if (next?.trim()) await patch(selected.id, { action: "edit", body: next });
   }
+
   async function scheduleSelected() {
     if (!selected || selected.status !== "approved") return;
-    const value = window.prompt("Data e hora para a fila:", new Date(Date.now() + 86400000).toISOString().slice(0, 16));
+    const value = window.prompt(
+      "Data e hora para a fila:",
+      new Date(Date.now() + 86400000).toISOString().slice(0, 16),
+    );
     if (!value) return;
-    const response = await fetch("/api/queue", {method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"schedule",campaignId:selected.campaignId,leadId:selected.leadId,messageId:selected.id,scheduledFor:new Date(value).toISOString()})});
-    const result=await response.json();
-    if(response.ok)setNotice(result.preview.reasons.length?`Agendada. ${result.preview.reasons.join(" ")}`:"Mensagem agendada na fila simulada.");else setNotice(result.error);
+    const response = await fetch("/api/queue", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        action: "schedule",
+        campaignId: selected.campaignId,
+        leadId: selected.leadId,
+        messageId: selected.id,
+        scheduledFor: new Date(value).toISOString(),
+      }),
+    });
+    const result = await response.json();
+    if (response.ok)
+      setNotice(
+        result.preview.reasons.length
+          ? `Agendada. ${result.preview.reasons.join(" ")}`
+          : "Mensagem agendada na fila simulada.",
+      );
+    else setNotice(result.error);
   }
+
   function exportCsv() {
     const campaignNames = new Map(
       data.campaigns.map((item) => [item.id, item.name]),
@@ -248,8 +376,75 @@ export default function MessageCenter({
     anchor.click();
     URL.revokeObjectURL(url);
   }
+
   return (
     <div className="message-center">
+      {initialIds.length > 0 && (
+        <article className="panel bulk-panel" aria-label="Lote vindo do Radar">
+          <div className="panel-head">
+            <div>
+              <h3>Lote de prospecção</h3>
+              <p>
+                {checked.length} de {initialIds.length} {initialIds.length === 1 ? "lead selecionado" : "leads selecionados"}. Escolha um template e salve todos os rascunhos de uma vez.
+              </p>
+            </div>
+            <span className="badge info">{checked.length} no lote</span>
+          </div>
+          <div className="bulk-leads">
+            {initialIds.map((id, index) => {
+              const lead = data.leads.find((item) => item.id === id);
+              if (!lead) return null;
+              const latest = latestMessageForLead(id);
+              return (
+                <div className="message-row" key={id}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={checked.includes(id)}
+                      onChange={(event) =>
+                        setChecked((current) =>
+                          event.target.checked
+                            ? [...new Set([...current, id])]
+                            : current.filter((item) => item !== id),
+                        )
+                      }
+                    />
+                    <span>
+                      <b>{index + 1}. {lead.name}</b>
+                      <small>{lead.phone} · {lead.city}</small>
+                    </span>
+                  </label>
+                  <span className={`badge ${latest?.status === "approved" ? "success" : latest ? "neutral" : "warning"}`}>
+                    {latest ? labels[latest.status] ?? latest.status : "Pendente"}
+                  </span>
+                  <button type="button" className="secondary compact" onClick={() => selectLead(id)}>
+                    Revisar
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          <div className="editor-actions">
+            <button
+              className="secondary"
+              type="button"
+              disabled={!checked.length || bulkBusy}
+              onClick={() => setChecked([])}
+            >
+              Limpar seleção
+            </button>
+            <button
+              className="primary"
+              type="button"
+              disabled={!templateId || !checked.length || bulkBusy}
+              onClick={() => void bulk()}
+            >
+              {bulkBusy ? "Salvando lote…" : `Salvar ${checked.length} ${checked.length === 1 ? "rascunho" : "rascunhos"}`}
+            </button>
+          </div>
+        </article>
+      )}
+
       <article className="panel message-composer">
         <div className="panel-head">
           <div>
@@ -277,7 +472,6 @@ export default function MessageCenter({
                   onChange={(event) => {
                     setCampaignId(event.target.value);
                     setLeadId("");
-                    setChecked([]);
                   }}
                 >
                   <option value="">Selecione</option>
@@ -292,7 +486,7 @@ export default function MessageCenter({
                 Lead
                 <select
                   value={leadId}
-                  onChange={(event) => setLeadId(event.target.value)}
+                  onChange={(event) => selectLead(event.target.value)}
                 >
                   <option value="">Selecione um lead</option>
                   {campaignLeads.map((item) => (
@@ -324,12 +518,19 @@ export default function MessageCenter({
             >
               {body ? "Regenerar prévia" : "Gerar prévia"}
             </button>
+            {persistedCurrent && (
+              <p className="message-status-line">
+                Versão salva: <span className="badge neutral">{labels[persistedCurrent.status] ?? persistedCurrent.status}</span>
+              </p>
+            )}
             <div className="message-preview">
               <small>Prévia — nenhuma mensagem será enviada</small>
               <textarea
                 aria-label="Conteúdo da mensagem"
                 value={body}
-                onChange={(event) => setBody(event.target.value)}
+                onChange={(event) =>
+                  setCurrentDraft({ body: event.target.value, warnings })
+                }
                 placeholder={
                   leadId
                     ? "Selecione um template e gere a prévia."
@@ -364,8 +565,21 @@ export default function MessageCenter({
               >
                 Marcar como preparada
               </button>
+              {checked.length > 1 && (
+                <button
+                  className="secondary"
+                  type="button"
+                  onClick={() => {
+                    const index = checked.indexOf(leadId);
+                    const next = checked[(index + 1 + checked.length) % checked.length];
+                    if (next) selectLead(next);
+                  }}
+                >
+                  Próximo do lote →
+                </button>
+              )}
             </div>
-            {campaignId && (
+            {campaignId && initialIds.length === 0 && (
               <details className="bulk-panel">
                 <summary>Gerar mensagens em lote</summary>
                 <div className="bulk-leads">
@@ -377,7 +591,7 @@ export default function MessageCenter({
                         onChange={(event) =>
                           setChecked((current) =>
                             event.target.checked
-                              ? [...current, lead.id]
+                              ? [...new Set([...current, lead.id])]
                               : current.filter((id) => id !== lead.id),
                           )
                         }
@@ -388,10 +602,10 @@ export default function MessageCenter({
                 </div>
                 <button
                   className="secondary"
-                  disabled={!templateId || !checked.length}
+                  disabled={!templateId || !checked.length || bulkBusy}
                   onClick={() => void bulk()}
                 >
-                  Gerar {checked.length} rascunhos
+                  {bulkBusy ? "Salvando…" : `Gerar ${checked.length} rascunhos`}
                 </button>
               </details>
             )}
@@ -458,7 +672,7 @@ export default function MessageCenter({
         </div>
         {loading ? (
           <div className="skeleton message-skeleton" />
-        ) : (
+        ) : filtered.length ? (
           filtered.map((item) => (
             <button
               className="message-row"
@@ -481,6 +695,8 @@ export default function MessageCenter({
               </time>
             </button>
           ))
+        ) : (
+          <div className="empty small"><p>Nenhuma mensagem encontrada para os filtros atuais.</p></div>
         )}
       </article>
       {selected && (
@@ -503,6 +719,7 @@ export default function MessageCenter({
               </div>
               <button
                 className="icon-button"
+                aria-label="Fechar"
                 onClick={() => setSelected(undefined)}
               >
                 ×
