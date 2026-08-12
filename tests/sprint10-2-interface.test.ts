@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const radar = readFileSync("app/radar/page.tsx", "utf8");
+const listPicker = readFileSync("app/ProspectListPicker.tsx", "utf8");
 const radarCss = readFileSync("app/intelligence.css", "utf8");
 const globalCss = readFileSync("app/globals.css", "utf8");
 
@@ -16,7 +17,8 @@ test("barra mostra zero oportunidades selecionadas", () => assert.match(radar, /
 test("ações em massa ficam desabilitadas sem seleção", () => assert.match(radar, /disabled=\{!selected\.length \|\| Boolean\(busyAction\)\}/));
 
 test("ações em massa ficam disponíveis quando existe seleção", () => {
-  assert.match(radar, /Adicionar à lista/);
+  assert.match(radar, /ProspectListPicker/);
+  assert.match(listPicker, /Adicionar à lista/);
   assert.match(radar, /Criar mensagens/);
   assert.match(radar, /Mover no CRM/);
   assert.match(radar, /Exportar/);
