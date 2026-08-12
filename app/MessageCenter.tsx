@@ -1,12 +1,9 @@
 "use client";
 /* eslint-disable react-hooks/set-state-in-effect */
+
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import type {
-  CommercialMessage,
-  Template,
-  ValidationIssue,
-} from "../lib/messages/types";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { CommercialMessage, Template, ValidationIssue } from "../lib/messages/types";
 import type { WorkspaceData } from "../lib/workspace-model";
 
 const labels: Record<string, string> = {
@@ -25,9 +22,7 @@ const labels: Record<string, string> = {
 };
 
 const csvCell = (value: unknown) =>
-  `"${String(value ?? "")
-    .replace(/^([=+\-@])/, "'$1")
-    .replace(/"/g, '""')}"`;
+  `"${String(value ?? "").replace(/^([=+\-@])/, "'$1").replace(/"/g, '""')}"`;
 
 type DraftState = { body: string; warnings: ValidationIssue[] };
 
@@ -40,10 +35,7 @@ export default function MessageCenter({
   setNotice: (value: string) => void;
   initialLeadIds?: string[];
 }) {
-  const allowedLeadIds = useMemo(
-    () => new Set(data.leads.map((lead) => lead.id)),
-    [data.leads],
-  );
+  const allowedLeadIds = useMemo(() => new Set(data.leads.map((lead) => lead.id)), [data.leads]);
   const initialIds = useMemo(
     () => [...new Set(initialLeadIds.filter((id) => allowedLeadIds.has(id)))],
     [initialLeadIds, allowedLeadIds],
@@ -66,25 +58,29 @@ export default function MessageCenter({
   const [sort, setSort] = useState("newest");
   const [bulkBusy, setBulkBusy] = useState(false);
 
-  async function load() {
+  const reload = useCallback(async () => {
     setLoading(true);
-    const response = await fetch("/api/messages", { cache: "no-store" });
-    if (response.ok) {
+    try {
+      const response = await fetch("/api/messages", { cache: "no-store" });
+      if (!response.ok) throw new Error("Falha ao carregar mensagens.");
       const payload = await response.json();
-      setMessages(payload.messages);
-      setTemplates(payload.templates);
+      setMessages(payload.messages ?? []);
+      setTemplates(payload.templates ?? []);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Falha ao carregar mensagens.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }
+  }, [setNotice]);
 
   useEffect(() => {
-    void load();
-  }, []);
+    void reload();
+  }, [reload]);
 
-  const campaignLeads = data.leads.filter(
-    (lead) => lead.campaignId === campaignId,
+  const campaignLeads = useMemo(
+    () => data.leads.filter((lead) => lead.campaignId === campaignId),
+    [data.leads, campaignId],
   );
-  const batchLeads = data.leads.filter((lead) => checked.includes(lead.id));
   const currentKey = leadId && templateId ? `${leadId}:${templateId}` : "";
   const persistedCurrent = useMemo(
     () =>
@@ -117,9 +113,7 @@ export default function MessageCenter({
             (!channel || item.channel === channel) &&
             (!type || item.type === type) &&
             (!templateId || item.templateId === templateId) &&
-            `${item.leadName} ${item.body}`
-              .toLowerCase()
-              .includes(query.toLowerCase()),
+            `${item.leadName} ${item.body}`.toLowerCase().includes(query.toLowerCase()),
         )
         .sort((a, b) =>
           sort === "oldest"
@@ -130,17 +124,7 @@ export default function MessageCenter({
                 ? a.status.localeCompare(b.status)
                 : b.createdAt.localeCompare(a.createdAt),
         ),
-    [
-      messages,
-      campaignId,
-      leadId,
-      status,
-      channel,
-      type,
-      templateId,
-      query,
-      sort,
-    ],
+    [messages, campaignId, leadId, status, channel, type, templateId, query, sort],
   );
 
   function setCurrentDraft(next: DraftState) {
@@ -158,8 +142,7 @@ export default function MessageCenter({
     return messages
       .filter(
         (item) =>
-          item.leadId === nextLeadId &&
-          (!templateId || item.templateId === templateId),
+          item.leadId === nextLeadId && (!templateId || item.templateId === templateId),
       )
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
   }
@@ -171,26 +154,17 @@ export default function MessageCenter({
       body: JSON.stringify(payload),
     });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.error);
+    if (!response.ok) throw new Error(result.error ?? "Falha na operação de mensagens.");
     return result;
   }
 
   async function preview() {
-    if (!leadId) {
-      setNotice("Selecione um lead para gerar a mensagem.");
-      return;
-    }
-    if (!templateId) {
-      setNotice("Selecione um template para gerar a mensagem.");
+    if (!leadId || !templateId) {
+      setNotice(!leadId ? "Selecione um lead para gerar a mensagem." : "Selecione um template para gerar a mensagem.");
       return;
     }
     try {
-      const result = await request({
-        action: "preview",
-        leadId,
-        campaignId,
-        templateId,
-      });
+      const result = await request({ action: "preview", leadId, campaignId, templateId });
       setCurrentDraft({ body: result.body, warnings: result.warnings });
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Falha na prévia.");
@@ -198,12 +172,8 @@ export default function MessageCenter({
   }
 
   async function create(nextStatus: "draft" | "prepared", allowDuplicate = false) {
-    if (!leadId) {
-      setNotice("Selecione um lead para gerar a mensagem.");
-      return;
-    }
-    if (!templateId) {
-      setNotice("Selecione um template.");
+    if (!leadId || !templateId) {
+      setNotice(!leadId ? "Selecione um lead para gerar a mensagem." : "Selecione um template.");
       return;
     }
     try {
@@ -222,29 +192,21 @@ export default function MessageCenter({
           ? `Rascunho de ${created.leadName ?? "empresa"} salvo.`
           : `Mensagem de ${created.leadName ?? "empresa"} preparada.`,
       );
-      await load();
+      await reload();
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Falha ao salvar.";
-      if (
-        message.includes("Confirme") &&
-        window.confirm(`${message} Deseja continuar?`)
-      )
-        return create(nextStatus, true);
+      const message = error instanceof Error ? error.message : "Falha ao salvar.";
+      if (message.includes("Confirme") && window.confirm(`${message} Deseja continuar?`)) {
+        await create(nextStatus, true);
+        return;
+      }
       setNotice(message);
     }
   }
 
   async function bulk() {
-    if (!templateId) {
-      setNotice("Selecione um template para gerar o lote.");
-      return;
-    }
+    if (!templateId) return setNotice("Selecione um template para gerar o lote.");
     const uniqueLeadIds = [...new Set(checked)].filter((id) => allowedLeadIds.has(id));
-    if (!uniqueLeadIds.length) {
-      setNotice("Selecione pelo menos um lead para o lote.");
-      return;
-    }
+    if (!uniqueLeadIds.length) return setNotice("Selecione pelo menos um lead para o lote.");
 
     setBulkBusy(true);
     try {
@@ -254,23 +216,15 @@ export default function MessageCenter({
         if (!lead) continue;
         groups.set(lead.campaignId, [...(groups.get(lead.campaignId) ?? []), id]);
       }
-
       let createdCount = 0;
       const skipped: string[] = [];
       for (const [groupCampaignId, leadIds] of groups) {
-        const result = await request({
-          action: "bulk",
-          campaignId: groupCampaignId,
-          leadIds,
-          templateId,
-        });
+        const result = await request({ action: "bulk", campaignId: groupCampaignId, leadIds, templateId });
         createdCount += result.created.length;
         skipped.push(...result.skipped);
       }
-      await load();
-      setNotice(
-        `${createdCount} ${createdCount === 1 ? "rascunho salvo" : "rascunhos salvos"}; ${skipped.length} ${skipped.length === 1 ? "lead ignorado" : "leads ignorados"}.`,
-      );
+      await reload();
+      setNotice(`${createdCount} ${createdCount === 1 ? "rascunho salvo" : "rascunhos salvos"}; ${skipped.length} ${skipped.length === 1 ? "lead ignorado" : "leads ignorados"}.`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Falha no lote.");
     } finally {
@@ -285,23 +239,23 @@ export default function MessageCenter({
       body: JSON.stringify(payload),
     });
     const result = await response.json();
-    if (response.ok) {
-      setSelected(result);
-      await load();
-    } else setNotice(result.error);
+    if (!response.ok) return setNotice(result.error ?? "Falha ao atualizar mensagem.");
+    setSelected(result);
+    await reload();
   }
 
   async function seed() {
-    await request({ action: "seed" });
-    await load();
+    try {
+      await request({ action: "seed" });
+      await reload();
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Falha ao criar templates.");
+    }
   }
 
   async function editSelected() {
     if (!selected) return;
-    if (selected.status === "approved") {
-      setNotice("Volte a mensagem para rascunho antes de editar.");
-      return;
-    }
+    if (selected.status === "approved") return setNotice("Volte a mensagem para rascunho antes de editar.");
     const next = window.prompt("Edite o conteúdo da mensagem:", selected.body);
     if (next?.trim()) await patch(selected.id, { action: "edit", body: next });
   }
@@ -325,51 +279,29 @@ export default function MessageCenter({
       }),
     });
     const result = await response.json();
-    if (response.ok)
-      setNotice(
-        result.preview.reasons.length
+    setNotice(
+      response.ok
+        ? result.preview.reasons.length
           ? `Agendada. ${result.preview.reasons.join(" ")}`
-          : "Mensagem agendada na fila simulada.",
-      );
-    else setNotice(result.error);
+          : "Mensagem agendada na fila simulada."
+        : result.error,
+    );
   }
 
   function exportCsv() {
-    const campaignNames = new Map(
-      data.campaigns.map((item) => [item.id, item.name]),
-    );
+    const campaignNames = new Map(data.campaigns.map((item) => [item.id, item.name]));
     const leadNames = new Map(data.leads.map((item) => [item.id, item]));
     const rows = filtered.map((item) => {
       const lead = leadNames.get(item.leadId);
-      return [
-        lead?.name,
-        lead?.phone,
-        campaignNames.get(item.campaignId),
-        item.channel,
-        item.type,
-        item.status,
-        item.body,
-        item.createdAt,
-      ];
+      return [lead?.name, lead?.phone, campaignNames.get(item.campaignId), item.channel, item.type, item.status, item.body, item.createdAt];
     });
     const csv = [
-      [
-        "Empresa",
-        "Telefone",
-        "Campanha",
-        "Canal",
-        "Tipo",
-        "Status",
-        "Conteúdo",
-        "Criado em",
-      ],
+      ["Empresa", "Telefone", "Campanha", "Canal", "Tipo", "Status", "Conteúdo", "Criado em"],
       ...rows,
     ]
       .map((row) => row.map(csvCell).join(","))
       .join("\r\n");
-    const url = URL.createObjectURL(
-      new Blob(["\uFEFF", csv], { type: "text/csv" }),
-    );
+    const url = URL.createObjectURL(new Blob(["\uFEFF", csv], { type: "text/csv" }));
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = "mensagens-prospectwise.csv";
@@ -384,9 +316,7 @@ export default function MessageCenter({
           <div className="panel-head">
             <div>
               <h3>Lote de prospecção</h3>
-              <p>
-                {checked.length} de {initialIds.length} {initialIds.length === 1 ? "lead selecionado" : "leads selecionados"}. Escolha um template e salve todos os rascunhos de uma vez.
-              </p>
+              <p>{checked.length} de {initialIds.length} {initialIds.length === 1 ? "lead selecionado" : "leads selecionados"}. Escolha um template e salve todos os rascunhos de uma vez.</p>
             </div>
             <span className="badge info">{checked.length} no lote</span>
           </div>
@@ -417,28 +347,14 @@ export default function MessageCenter({
                   <span className={`badge ${latest?.status === "approved" ? "success" : latest ? "neutral" : "warning"}`}>
                     {latest ? labels[latest.status] ?? latest.status : "Pendente"}
                   </span>
-                  <button type="button" className="secondary compact" onClick={() => selectLead(id)}>
-                    Revisar
-                  </button>
+                  <button type="button" className="secondary compact" onClick={() => selectLead(id)}>Revisar</button>
                 </div>
               );
             })}
           </div>
           <div className="editor-actions">
-            <button
-              className="secondary"
-              type="button"
-              disabled={!checked.length || bulkBusy}
-              onClick={() => setChecked([])}
-            >
-              Limpar seleção
-            </button>
-            <button
-              className="primary"
-              type="button"
-              disabled={!templateId || !checked.length || bulkBusy}
-              onClick={() => void bulk()}
-            >
+            <button className="secondary" type="button" disabled={!checked.length || bulkBusy} onClick={() => setChecked([])}>Limpar seleção</button>
+            <button className="primary" type="button" disabled={!templateId || !checked.length || bulkBusy} onClick={() => void bulk()}>
               {bulkBusy ? "Salvando lote…" : `Salvar ${checked.length} ${checked.length === 1 ? "rascunho" : "rascunhos"}`}
             </button>
           </div>
@@ -447,124 +363,62 @@ export default function MessageCenter({
 
       <article className="panel message-composer">
         <div className="panel-head">
-          <div>
-            <h3>Preparar abordagem</h3>
-            <p>Templates determinísticos, sem IA e sem envio externo.</p>
-          </div>
-          <span className="badge warning">
-            Prévia — nenhuma mensagem será enviada
-          </span>
+          <div><h3>Preparar abordagem</h3><p>Templates determinísticos, sem IA e sem envio externo.</p></div>
+          <span className="badge warning">Prévia — nenhuma mensagem será enviada</span>
         </div>
         {!templates.length && !loading ? (
           <div className="empty small">
             <p>Carregue a biblioteca inicial de templates.</p>
-            <button className="primary compact" onClick={() => void seed()}>
-              Criar templates iniciais
-            </button>
+            <button className="primary compact" onClick={() => void seed()}>Criar templates iniciais</button>
           </div>
         ) : (
           <>
             <div className="composer-selects">
               <label>
                 Campanha
-                <select
-                  value={campaignId}
-                  onChange={(event) => {
-                    setCampaignId(event.target.value);
-                    setLeadId("");
-                  }}
-                >
+                <select value={campaignId} onChange={(event) => { setCampaignId(event.target.value); setLeadId(""); }}>
                   <option value="">Selecione</option>
-                  {data.campaigns.map((item) => (
-                    <option value={item.id} key={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
+                  {data.campaigns.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}
                 </select>
               </label>
               <label>
                 Lead
-                <select
-                  value={leadId}
-                  onChange={(event) => selectLead(event.target.value)}
-                >
+                <select value={leadId} onChange={(event) => selectLead(event.target.value)}>
                   <option value="">Selecione um lead</option>
-                  {campaignLeads.map((item) => (
-                    <option value={item.id} key={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
+                  {campaignLeads.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}
                 </select>
               </label>
               <label>
                 Template
-                <select
-                  value={templateId}
-                  onChange={(event) => setTemplateId(event.target.value)}
-                >
+                <select value={templateId} onChange={(event) => setTemplateId(event.target.value)}>
                   <option value="">Selecione</option>
-                  {templates.map((item) => (
-                    <option value={item.id} key={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
+                  {templates.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}
                 </select>
               </label>
             </div>
-            <button
-              className="secondary"
-              disabled={!campaignId || !leadId || !templateId}
-              onClick={() => void preview()}
-            >
+            <button className="secondary" disabled={!campaignId || !leadId || !templateId} onClick={() => void preview()}>
               {body ? "Regenerar prévia" : "Gerar prévia"}
             </button>
             {persistedCurrent && (
-              <p className="message-status-line">
-                Versão salva: <span className="badge neutral">{labels[persistedCurrent.status] ?? persistedCurrent.status}</span>
-              </p>
+              <p className="message-status-line">Versão salva: <span className="badge neutral">{labels[persistedCurrent.status] ?? persistedCurrent.status}</span></p>
             )}
             <div className="message-preview">
               <small>Prévia — nenhuma mensagem será enviada</small>
               <textarea
                 aria-label="Conteúdo da mensagem"
                 value={body}
-                onChange={(event) =>
-                  setCurrentDraft({ body: event.target.value, warnings })
-                }
-                placeholder={
-                  leadId
-                    ? "Selecione um template e gere a prévia."
-                    : "Selecione um lead para gerar a mensagem."
-                }
+                onChange={(event) => setCurrentDraft({ body: event.target.value, warnings })}
+                placeholder={leadId ? "Selecione um template e gere a prévia." : "Selecione um lead para gerar a mensagem."}
               />
               {warnings.map((item) => (
-                <span
-                  className={
-                    item.type === "blocking_error"
-                      ? "message-error"
-                      : "message-warning"
-                  }
-                  key={`${item.type}-${item.message}`}
-                >
+                <span className={item.type === "blocking_error" ? "message-error" : "message-warning"} key={`${item.type}-${item.message}`}>
                   {item.type === "blocking_error" ? "✕" : "⚠"} {item.message}
                 </span>
               ))}
             </div>
             <div className="editor-actions">
-              <button
-                className="secondary"
-                disabled={!body}
-                onClick={() => void create("draft")}
-              >
-                Salvar rascunho
-              </button>
-              <button
-                className="primary"
-                disabled={!body}
-                onClick={() => void create("prepared")}
-              >
-                Marcar como preparada
-              </button>
+              <button className="secondary" disabled={!body} onClick={() => void create("draft")}>Salvar rascunho</button>
+              <button className="primary" disabled={!body} onClick={() => void create("prepared")}>Marcar como preparada</button>
               {checked.length > 1 && (
                 <button
                   className="secondary"
@@ -600,11 +454,7 @@ export default function MessageCenter({
                     </label>
                   ))}
                 </div>
-                <button
-                  className="secondary"
-                  disabled={!templateId || !checked.length || bulkBusy}
-                  onClick={() => void bulk()}
-                >
+                <button className="secondary" disabled={!templateId || !checked.length || bulkBusy} onClick={() => void bulk()}>
                   {bulkBusy ? "Salvando…" : `Gerar ${checked.length} rascunhos`}
                 </button>
               </details>
@@ -612,224 +462,83 @@ export default function MessageCenter({
           </>
         )}
       </article>
+
       <article className="panel messages-panel">
         <div className="panel-head">
-          <div>
-            <h3>Painel de mensagens</h3>
-            <p>{filtered.length} registros</p>
-          </div>
-          <button className="secondary compact" onClick={exportCsv}>
-            Exportar CSV
-          </button>
+          <div><h3>Painel de mensagens</h3><p>{filtered.length} registros</p></div>
+          <button className="secondary compact" onClick={exportCsv}>Exportar CSV</button>
         </div>
         <div className="message-filters">
-          <input
-            aria-label="Buscar mensagens"
-            placeholder="Buscar empresa ou conteúdo..."
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-          <select
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-          >
+          <input aria-label="Buscar mensagens" placeholder="Buscar empresa ou conteúdo..." value={query} onChange={(event) => setQuery(event.target.value)} />
+          <select value={status} onChange={(event) => setStatus(event.target.value)}>
             <option value="">Todos os status</option>
-            {["draft", "prepared", "approved", "cancelled"].map((item) => (
-              <option value={item} key={item}>
-                {labels[item]}
-              </option>
-            ))}
+            {["draft", "prepared", "approved", "cancelled"].map((item) => <option value={item} key={item}>{labels[item]}</option>)}
           </select>
-          <select
-            value={channel}
-            onChange={(event) => setChannel(event.target.value)}
-          >
-            <option value="">Todos os canais</option>
-            <option>whatsapp</option>
-            <option>email</option>
-            <option>manual</option>
+          <select value={channel} onChange={(event) => setChannel(event.target.value)}>
+            <option value="">Todos os canais</option><option>whatsapp</option><option>email</option><option>manual</option>
           </select>
-          <select
-            value={type}
-            onChange={(event) => setType(event.target.value)}
-          >
+          <select value={type} onChange={(event) => setType(event.target.value)}>
             <option value="">Todos os tipos</option>
-            {templates.map((item) => (
-              <option value={item.type} key={item.id}>
-                {labels[item.type]}
-              </option>
-            ))}
+            {templates.map((item) => <option value={item.type} key={item.id}>{labels[item.type]}</option>)}
           </select>
-          <select
-            value={sort}
-            onChange={(event) => setSort(event.target.value)}
-          >
-            <option value="newest">Mais recente</option>
-            <option value="oldest">Mais antiga</option>
-            <option value="company">Empresa</option>
-            <option value="status">Status</option>
+          <select value={sort} onChange={(event) => setSort(event.target.value)}>
+            <option value="newest">Mais recente</option><option value="oldest">Mais antiga</option><option value="company">Empresa</option><option value="status">Status</option>
           </select>
         </div>
         {loading ? (
           <div className="skeleton message-skeleton" />
         ) : filtered.length ? (
           filtered.map((item) => (
-            <button
-              className="message-row"
-              key={item.id}
-              onClick={() => setSelected(item)}
-            >
-              <span>
-                <b>{item.leadName ?? "Empresa"}</b>
-                <small>
-                  {item.campaignName} · {item.channel} · {labels[item.type]}
-                </small>
-              </span>
-              <span
-                className={`badge ${item.status === "approved" ? "success" : item.status === "cancelled" ? "warning" : "neutral"}`}
-              >
-                {labels[item.status] ?? item.status}
-              </span>
-              <time>
-                {new Date(item.createdAt).toLocaleDateString("pt-BR")}
-              </time>
+            <button className="message-row" key={item.id} onClick={() => setSelected(item)}>
+              <span><b>{item.leadName ?? "Empresa"}</b><small>{item.campaignName} · {item.channel} · {labels[item.type]}</small></span>
+              <span className={`badge ${item.status === "approved" ? "success" : item.status === "cancelled" ? "warning" : "neutral"}`}>{labels[item.status] ?? item.status}</span>
+              <time>{new Date(item.createdAt).toLocaleDateString("pt-BR")}</time>
             </button>
           ))
         ) : (
           <div className="empty small"><p>Nenhuma mensagem encontrada para os filtros atuais.</p></div>
         )}
       </article>
+
       {selected && (
-        <div
-          className="modal-backdrop"
-          onMouseDown={() => setSelected(undefined)}
-        >
-          <article
-            className="panel message-detail"
-            role="dialog"
-            aria-modal="true"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
+        <div className="modal-backdrop" onMouseDown={() => setSelected(undefined)}>
+          <article className="panel message-detail" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
             <div className="panel-head">
-              <div>
-                <h3>{selected.leadName}</h3>
-                <p>
-                  {selected.campaignName} · versão {selected.version}
-                </p>
-              </div>
-              <button
-                className="icon-button"
-                aria-label="Fechar"
-                onClick={() => setSelected(undefined)}
-              >
-                ×
-              </button>
+              <div><h3>{selected.leadName}</h3><p>{selected.campaignName} · versão {selected.version}</p></div>
+              <button className="icon-button" aria-label="Fechar" onClick={() => setSelected(undefined)}>×</button>
             </div>
             <p className="message-copy">{selected.body}</p>
             <div className="message-meta">
-              <span>Canal: {selected.channel}</span>
-              <span>Tipo: {labels[selected.type]}</span>
-              <span>Status: {labels[selected.status]}</span>
-              <span>
-                Criada: {new Date(selected.createdAt).toLocaleString("pt-BR")}
-              </span>
-              {selected.approvedAt && (
-                <span>
-                  Aprovada:{" "}
-                  {new Date(selected.approvedAt).toLocaleString("pt-BR")}
-                </span>
-              )}
+              <span>Canal: {selected.channel}</span><span>Tipo: {labels[selected.type]}</span><span>Status: {labels[selected.status]}</span>
+              <span>Criada: {new Date(selected.createdAt).toLocaleString("pt-BR")}</span>
+              {selected.approvedAt && <span>Aprovada: {new Date(selected.approvedAt).toLocaleString("pt-BR")}</span>}
             </div>
             <h4>Histórico</h4>
             <div className="message-meta">
-              <span>
-                Criada em {new Date(selected.createdAt).toLocaleString("pt-BR")}
-              </span>
-              <span>
-                Atualizada em{" "}
-                {new Date(selected.updatedAt).toLocaleString("pt-BR")}
-              </span>
-              {selected.approvedAt && (
-                <span>
-                  Aprovada em{" "}
-                  {new Date(selected.approvedAt).toLocaleString("pt-BR")}
-                </span>
-              )}
+              <span>Criada em {new Date(selected.createdAt).toLocaleString("pt-BR")}</span>
+              <span>Atualizada em {new Date(selected.updatedAt).toLocaleString("pt-BR")}</span>
+              {selected.approvedAt && <span>Aprovada em {new Date(selected.approvedAt).toLocaleString("pt-BR")}</span>}
             </div>
             {selected.warnings.map((item) => (
-              <span
-                className={
-                  item.type === "blocking_error"
-                    ? "message-error"
-                    : "message-warning"
-                }
-                key={`${item.type}-${item.message}`}
-              >
+              <span className={item.type === "blocking_error" ? "message-error" : "message-warning"} key={`${item.type}-${item.message}`}>
                 {item.type === "blocking_error" ? "✕" : "⚠"} {item.message}
               </span>
             ))}
             <div className="editor-actions">
-              <Link className="secondary" href={`/leads/${selected.leadId}`}>
-                Abrir lead
-              </Link>
-              <Link
-                className="secondary"
-                href={`/campanhas/${selected.campaignId}`}
-              >
-                Abrir campanha
-              </Link>
-              <button
-                className="secondary"
-                onClick={() => void patch(selected.id, { action: "duplicate" })}
-              >
-                Duplicar
-              </button>
-              <button className="secondary" onClick={() => void editSelected()}>
-                Editar
-              </button>
+              <Link className="secondary" href={`/leads/${selected.leadId}`}>Abrir lead</Link>
+              <Link className="secondary" href={`/campanhas/${selected.campaignId}`}>Abrir campanha</Link>
+              <button className="secondary" onClick={() => void patch(selected.id, { action: "duplicate" })}>Duplicar</button>
+              <button className="secondary" onClick={() => void editSelected()}>Editar</button>
               {selected.status === "approved" && <button className="secondary" onClick={() => void scheduleSelected()}>Agendar na fila</button>}
-              {selected.status !== "draft" && (
-                <button
-                  className="secondary"
-                  onClick={() =>
-                    void patch(selected.id, {
-                      action: "transition",
-                      status: "draft",
-                    })
-                  }
-                >
-                  Voltar para rascunho
-                </button>
-              )}
+              {selected.status !== "draft" && <button className="secondary" onClick={() => void patch(selected.id, { action: "transition", status: "draft" })}>Voltar para rascunho</button>}
               <button
                 className="primary"
-                disabled={
-                  selected.status === "approved" ||
-                  !selected.body.trim() ||
-                  selected.warnings.some(
-                    (item) => item.type === "blocking_error",
-                  )
-                }
-                onClick={() =>
-                  void patch(selected.id, {
-                    action: "transition",
-                    status: "approved",
-                  })
-                }
+                disabled={selected.status === "approved" || !selected.body.trim() || selected.warnings.some((item) => item.type === "blocking_error")}
+                onClick={() => void patch(selected.id, { action: "transition", status: "approved" })}
               >
                 Aprovar
               </button>
-              <button
-                className="secondary danger-link"
-                onClick={() =>
-                  void patch(selected.id, {
-                    action: "transition",
-                    status: "cancelled",
-                  })
-                }
-              >
-                Cancelar
-              </button>
+              <button className="secondary danger-link" onClick={() => void patch(selected.id, { action: "transition", status: "cancelled" })}>Cancelar</button>
             </div>
           </article>
         </div>
