@@ -6,6 +6,7 @@ import type {
   CsvField,
   CsvPreview,
 } from "../../../lib/csv-import/types";
+import { googleMapsTextToCsv } from "../../../lib/google-maps-paste";
 import {
   analyzeImportedLeads,
   type AnalysisProgress,
@@ -36,8 +37,10 @@ type ImportResult = {
 export default function CsvImportPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [campaignId, setCampaignId] = useState("");
-  const [mode, setMode] = useState<"file" | "paste">("file");
+  const [mode, setMode] = useState<"file" | "paste" | "maps">("file");
   const [text, setText] = useState("");
+  const [preparedText, setPreparedText] = useState("");
+  const [mapsParsedCount, setMapsParsedCount] = useState(0);
   const [fileName, setFileName] = useState("");
   const [mapping, setMapping] = useState<CsvColumnMapping>({});
   const [preview, setPreview] = useState<Omit<CsvPreview, "rows">>();
@@ -66,6 +69,8 @@ export default function CsvImportPage() {
     setError("");
     setResult(undefined);
     setPreview(undefined);
+    setPreparedText("");
+    setMapsParsedCount(0);
     if (!file) return;
     if (file.size > MAX_SIZE) {
       setError("Arquivo maior que 2 MB.");
@@ -83,17 +88,28 @@ export default function CsvImportPage() {
   }
   async function generatePreview(nextMapping = mapping) {
     if (!text.trim()) {
-      setError("Selecione um CSV ou cole os dados.");
+      setError(mode === "maps" ? "Cole os dados copiados do Google Maps." : "Selecione um CSV ou cole os dados.");
       return;
     }
     setLoading(true);
     setError("");
     setResult(undefined);
     try {
+      let importText = text;
+      if (mode === "maps") {
+        const converted = googleMapsTextToCsv(text);
+        if (!converted.leads.length)
+          throw new Error("Não encontrei nenhuma empresa no texto do Google Maps. Copie o painel da empresa ou a lista de resultados e tente novamente.");
+        importText = converted.csv;
+        setMapsParsedCount(converted.leads.length);
+      } else {
+        setMapsParsedCount(0);
+      }
+      setPreparedText(importText);
       const response = await fetch("/api/import/csv/preview", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ campaignId, text, mapping: nextMapping }),
+        body: JSON.stringify({ campaignId, text: importText, mapping: nextMapping }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message ?? data.error);
@@ -109,7 +125,7 @@ export default function CsvImportPage() {
       setMapping(suggestions);
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : "Falha ao analisar CSV.",
+        cause instanceof Error ? cause.message : "Falha ao analisar os dados.",
       );
       setPreview(undefined);
     } finally {
@@ -117,7 +133,7 @@ export default function CsvImportPage() {
     }
   }
   async function commit() {
-    if (!campaignId || !preview) return;
+    if (!campaignId || !preview || !preparedText) return;
     setLoading(true);
     setError("");
     setAnalysisProgress(undefined);
@@ -125,7 +141,7 @@ export default function CsvImportPage() {
       const response = await fetch("/api/import/csv/commit", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ campaignId, text, mapping }),
+        body: JSON.stringify({ campaignId, text: preparedText, mapping }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
@@ -133,11 +149,22 @@ export default function CsvImportPage() {
       await analyzeImportedLeads(campaignId, data.leadIds, setAnalysisProgress);
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : "Falha ao importar CSV.",
+        cause instanceof Error ? cause.message : "Falha ao importar empresas.",
       );
     } finally {
       setLoading(false);
     }
+  }
+  function changeMode(next: "file" | "paste" | "maps") {
+    setMode(next);
+    setText("");
+    setPreparedText("");
+    setPreview(undefined);
+    setResult(undefined);
+    setError("");
+    setFileName("");
+    setMapsParsedCount(0);
+    setMapping({});
   }
   return (
     <main className="form-page csv-import-page">
@@ -146,8 +173,8 @@ export default function CsvImportPage() {
         <article className="panel csv-source">
           <div className="panel-head">
             <div>
-              <h1>Importar empresas por CSV</h1>
-              <p>Revise e confirme os dados antes de salvar.</p>
+              <h1>Importar empresas</h1>
+              <p>Use CSV, dados de planilha ou texto copiado do Google Maps. Revise tudo antes de salvar.</p>
             </div>
             <a
               className="secondary compact"
@@ -171,18 +198,24 @@ export default function CsvImportPage() {
               ))}
             </select>
           </label>
-          <div className="csv-mode">
+          <div className="csv-mode" role="group" aria-label="Origem dos dados">
             <button
               className={mode === "file" ? "active" : ""}
-              onClick={() => setMode("file")}
+              onClick={() => changeMode("file")}
             >
-              Enviar arquivo
+              Enviar CSV
             </button>
             <button
               className={mode === "paste" ? "active" : ""}
-              onClick={() => setMode("paste")}
+              onClick={() => changeMode("paste")}
             >
-              Colar dados
+              Colar planilha
+            </button>
+            <button
+              className={mode === "maps" ? "active" : ""}
+              onClick={() => changeMode("maps")}
+            >
+              Colar Google Maps
             </button>
           </div>
           {mode === "file" ? (
@@ -195,6 +228,23 @@ export default function CsvImportPage() {
               />
               <span>{fileName || "Escolher arquivo CSV"}</span>
             </label>
+          ) : mode === "maps" ? (
+            <label>
+              Texto copiado do Google Maps
+              <textarea
+                className="csv-paste"
+                value={text}
+                onChange={(event) => {
+                  setText(event.target.value);
+                  setPreparedText("");
+                  setPreview(undefined);
+                  setResult(undefined);
+                  setMapsParsedCount(0);
+                }}
+                placeholder={"Cole aqui o painel de uma empresa ou vários resultados copiados do Google Maps.\n\nEx.:\nOficina Exemplo\n4,8\n(120)\nOficina mecânica\nAv. Exemplo, 100 - Centro, Macaé - RJ\n(22) 99999-9999"}
+              />
+              <small>O ProspectWise tenta identificar nome, telefone, endereço, cidade, categoria, nota e avaliações. Você confirma tudo na prévia.</small>
+            </label>
           ) : (
             <label>
               Dados copiados da planilha
@@ -203,6 +253,7 @@ export default function CsvImportPage() {
                 value={text}
                 onChange={(event) => {
                   setText(event.target.value);
+                  setPreparedText("");
                   setPreview(undefined);
                   setResult(undefined);
                 }}
@@ -217,8 +268,9 @@ export default function CsvImportPage() {
             disabled={loading || !text || !campaignId}
             onClick={() => void generatePreview()}
           >
-            {loading ? "Processando…" : "Pré-visualizar dados"}
+            {loading ? "Processando…" : mode === "maps" ? "Identificar empresas e pré-visualizar" : "Pré-visualizar dados"}
           </button>
+          {mapsParsedCount > 0 && <div className="ui-alert info" role="status">{mapsParsedCount} {mapsParsedCount === 1 ? "empresa identificada" : "empresas identificadas"} no texto do Google Maps.</div>}
           {error && <div className="search-error">{error}</div>}
         </article>
         <section className="csv-preview">
@@ -337,7 +389,7 @@ export default function CsvImportPage() {
                 >
                   {loading
                     ? "Importando…"
-                    : `Importar ${preview.stats.valid} empresas`}
+                    : `Importar ${preview.stats.valid} ${preview.stats.valid === 1 ? "empresa" : "empresas"}`}
                 </button>
               </article>
             </>
@@ -354,7 +406,7 @@ export default function CsvImportPage() {
           {result && (
             <article className="panel import-success">
               <span>✓</span>
-              <h3>{result.imported} empresas importadas</h3>
+              <h3>{result.imported} {result.imported === 1 ? "empresa importada" : "empresas importadas"}</h3>
               <p>
                 {result.duplicates} duplicadas e {result.invalid} inválidas não
                 foram importadas.
@@ -366,7 +418,7 @@ export default function CsvImportPage() {
                     <span>{analysisProgress.percentage}%</span>
                   </div>
                   <div className="bar">
-                    <span style={{ width: `${analysisProgress.percentage}%` }} />
+                    <span style={{ width: `${Math.min(100, analysisProgress.percentage)}%` }} />
                   </div>
                   <small>
                     {analysisProgress.processed} de {analysisProgress.total} leads analisados
