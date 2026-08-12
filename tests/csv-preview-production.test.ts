@@ -6,7 +6,8 @@ const source=(path:string)=>readFile(new URL(`../${path}`,import.meta.url),"utf8
 
 test("preview envia campaignId e preserva o fluxo JSON atual",async()=>{
   const client=await source("app/leads/importar/page.tsx");
-  assert.match(client,/JSON\.stringify\(\{ campaignId, text, mapping: nextMapping \}\)/);
+  assert.match(client,/JSON\.stringify\(\{ campaignId, text: importText, mapping: nextMapping \}\)/);
+  assert.match(client,/let importText = text/);
 });
 
 test("preview aceita JSON e FormData sem Buffer ou PapaParse",async()=>{
