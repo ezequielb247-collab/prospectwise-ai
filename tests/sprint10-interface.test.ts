@@ -69,14 +69,16 @@ test("Radar usa o workspace global e as barras do design system", () => {
   assert.doesNotMatch(source, /className="form-page"|className="filters"|className="panel bulk-actions"/);
 });
 
-test("Radar separa ações e não apresenta texto colado sem seleção", () => {
+test("Radar separa ações e mantém ações desabilitadas sem seleção", () => {
   const source = read("app/radar/page.tsx");
+  const picker = read("app/ProspectListPicker.tsx");
   assert.match(source, /Selecione oportunidades para executar ações em massa/);
   assert.match(source, /Selecionar filtrados/);
-  assert.match(source, /Adicionar à lista/);
+  assert.match(source, /ProspectListPicker/);
+  assert.match(picker, /Adicionar à lista/);
   assert.match(source, /Criar mensagens/);
   assert.match(source, /Limpar seleção/);
-  assert.match(source, /selected\.length > 0/);
+  assert.match(source, /disabled=\{!selected\.length \|\| Boolean\(busyAction\)\}/);
 });
 
 test("checkbox do Radar possui id e label associado", () => {
