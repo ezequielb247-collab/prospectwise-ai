@@ -1,1 +1,59 @@
-import Link from"next/link";import{requireCurrentUser}from"../../../lib/auth/session";import{prospectLists}from"../../../lib/prospect-lists/container";export default async function Page({params}:{params:Promise<{id:string}>}){const{id}=await params,user=await requireCurrentUser(`/listas/${id}`),list=await(await prospectLists()).get(user.id,id);if(!list)return <main className="form-page"><h1>Lista não encontrada</h1><Link href="/listas">Voltar</Link></main>;return <main className="form-page"><Link href="/listas">← Listas</Link><article className="form-card"><h1>{list.name}</h1><p>{list.description}</p><p>{list.items?.length??0} leads selecionados</p>{list.items?.map(item=><div className="company" key={item.id}><div><Link href={`/leads/${item.leadId}`}><b>{item.leadName}</b></Link><small>{item.phone??"Sem telefone"} · {item.score??"Não analisado"}</small></div></div>)}<div className="actions"><Link className="secondary" href="/mensagens">Gerar mensagens</Link><Link className="primary" href={`/prospeccao?listId=${id}`}>Iniciar prospecção</Link></div></article></main>}
+import Link from "next/link";
+import { requireCurrentUser } from "../../../lib/auth/session";
+import { prospectLists } from "../../../lib/prospect-lists/container";
+import { EmptyState, SectionCard, WorkspaceShell } from "../../ui/interface";
+
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const user = await requireCurrentUser(`/listas/${id}`);
+  const list = await (await prospectLists()).get(user.id, id);
+
+  if (!list)
+    return (
+      <WorkspaceShell page="listas" title="Lista não encontrada" subtitle="A lista solicitada não existe ou não pertence à sua conta.">
+        <EmptyState title="Lista não encontrada" action={<Link className="secondary" href="/listas">Voltar para listas</Link>} />
+      </WorkspaceShell>
+    );
+
+  const items = list.items ?? [];
+  const leadIds = items.map((item) => item.leadId);
+  const messageHref = leadIds.length
+    ? `/mensagens?leadIds=${encodeURIComponent(leadIds.join(","))}`
+    : "/mensagens";
+
+  return (
+    <WorkspaceShell
+      page="listas"
+      title={list.name}
+      subtitle={list.description ?? "Lista comercial para organizar sua prospecção."}
+      actions={<Link className="secondary" href="/listas">← Todas as listas</Link>}
+    >
+      <SectionCard>
+        <div className="panel-head">
+          <div>
+            <h3>{items.length} {items.length === 1 ? "lead selecionado" : "leads selecionados"}</h3>
+            <p>Revise a lista, prepare as mensagens e avance para a prospecção manual.</p>
+          </div>
+          <div className="actions">
+            {leadIds.length > 0 && <Link className="secondary" href={messageHref}>Gerar mensagens do lote</Link>}
+            {leadIds.length > 0 && <Link className="primary" href={`/prospeccao?listId=${id}`}>Iniciar prospecção</Link>}
+          </div>
+        </div>
+        {items.length ? (
+          <div className="commercial-card-grid">
+            {items.map((item) => (
+              <article className="company panel" key={item.id}>
+                <div>
+                  <Link href={`/leads/${item.leadId}`}><b>{item.leadName ?? "Lead"}</b></Link>
+                  <small>{item.phone ?? "Sem telefone"} · Score {item.score ?? "não analisado"}</small>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="Lista vazia" description="Adicione oportunidades pelo Radar ou pela página de Leads." action={<Link className="primary" href="/radar">Abrir Radar</Link>} />
+        )}
+      </SectionCard>
+    </WorkspaceShell>
+  );
+}
