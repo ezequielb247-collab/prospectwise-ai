@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { RadarEntry } from "../../lib/intelligence/types";
+import ProspectListPicker from "../ProspectListPicker";
 import { ActionBar, BulkActionBar, EmptyState, FilterBar, FormField, InlineAlert, SectionCard, StatusBadge, WorkspaceShell } from "../ui/interface";
 
 type RadarOrder = "score_desc" | "score_asc" | "recent";
@@ -35,6 +36,7 @@ export default function RadarPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [busyAction, setBusyAction] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -56,15 +58,18 @@ export default function RadarPage() {
 
   const visible = useMemo(() => [...entries].sort((a, b) => order === "score_asc" ? a.analysis.score - b.analysis.score : order === "recent" ? new Date(b.analysis.analyzedAt).getTime() - new Date(a.analysis.analyzedAt).getTime() : b.analysis.score - a.analysis.score), [entries, order]);
   const summary = useMemo(() => ({ total: entries.length, high: entries.filter(item => item.analysis.priority === "Alta").length, medium: entries.filter(item => item.analysis.priority.toLocaleLowerCase("pt-BR").startsWith("m")).length, low: entries.filter(item => item.analysis.priority === "Baixa").length, average: entries.length ? Math.round(entries.reduce((total, item) => total + item.analysis.score, 0) / entries.length) : 0 }), [entries]);
+  const selectedCampaignId = useMemo(() => {
+    const campaignIds = [...new Set(entries.filter((item) => selected.includes(item.lead.id)).map((item) => item.lead.campaignId))];
+    return campaignIds.length === 1 ? campaignIds[0] : null;
+  }, [entries, selected]);
 
   async function runBulkAction(name: string, action: () => Promise<void>) {
-    setBusyAction(name); setError("");
+    setBusyAction(name); setError(""); setNotice("");
     try { await action(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Não foi possível concluir a ação."); }
     finally { setBusyAction(""); }
   }
-  async function addList() { const id = window.prompt("ID da lista:"); if (!id) return; const response = await fetch("/api/prospect-lists", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "add", id, leadIds: selected }) }); if (!response.ok) throw new Error("Não foi possível adicionar as oportunidades à lista."); }
-  async function moveCrm() { const stage = window.prompt("Mover para etapa:", "Contatado"); if (!stage) return; const responses = await Promise.all(selected.map(leadId => fetch("/api/crm/move", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ leadId, stage }) }))); if (responses.some(response => !response.ok)) throw new Error("Não foi possível mover todas as oportunidades."); }
-  function exportSelected() { const chosen = entries.filter(item => selected.includes(item.lead.id)); const escape = (value: unknown) => `"${String(value ?? "").replaceAll('"', '""')}"`; const csv = ["nome,cidade,categoria,score,prioridade,classificacao", ...chosen.map(item => [item.lead.name, item.lead.city, item.lead.category, item.analysis.score, item.analysis.priority, item.analysis.classification].map(escape).join(","))].join("\n"); const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "oportunidades-radar.csv"; anchor.click(); URL.revokeObjectURL(url); }
+  async function moveCrm() { const stage = window.prompt("Mover para etapa:", "Contatado"); if (!stage) return; const responses = await Promise.all(selected.map(leadId => fetch("/api/crm/move", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ leadId, stage }) }))); if (responses.some(response => !response.ok)) throw new Error("Não foi possível mover todas as oportunidades."); setNotice(`${selected.length} oportunidades movidas para ${stage}.`); }
+  function exportSelected() { const chosen = entries.filter(item => selected.includes(item.lead.id)); const escape = (value: unknown) => `"${String(value ?? "").replaceAll('"', '""')}"`; const csv = ["nome,cidade,categoria,score,prioridade,classificacao", ...chosen.map(item => [item.lead.name, item.lead.city, item.lead.category, item.analysis.score, item.analysis.priority, item.analysis.classification].map(escape).join(","))].join("\n"); const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "oportunidades-radar.csv"; anchor.click(); URL.revokeObjectURL(url); setNotice(`${chosen.length} oportunidades exportadas.`); }
   function toggle(id: string) { setSelected(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]); }
   function openLead(id: string) { router.push(`/leads/${id}`); }
   function clearFilters() { setMinimumScore("0"); setPriority(""); setClassification(""); setWithoutWebsite(false); setOrder("score_desc"); }
@@ -80,7 +85,8 @@ export default function RadarPage() {
       <FormField id="radar-without-site" label="Presença digital"><div className="ui-check-control"><input id="radar-without-site" type="checkbox" checked={withoutWebsite} onChange={event => setWithoutWebsite(event.target.checked)} /><span>Sem site</span></div></FormField>
       <FormField id="radar-order" label="Ordenação"><select id="radar-order" value={order} onChange={event => setOrder(event.target.value as RadarOrder)}><option value="score_desc">Maior score</option><option value="score_asc">Menor score</option><option value="recent">Análise mais recente</option></select></FormField><div className="radar-filter-actions"><span role="status">{visible.length} {visible.length === 1 ? "resultado" : "resultados"}</span><button className="secondary" type="button" onClick={clearFilters}>Limpar filtros</button></div>
     </FilterBar></details>
-    <BulkActionBar><div className="bulk-selection-controls"><strong>{selected.length} {selected.length === 1 ? "oportunidade selecionada" : "oportunidades selecionadas"}</strong><span className="sr-only">{selected.length > 0 ? "Ações em massa disponíveis." : "Selecione oportunidades para executar ações em massa."}</span><button className="secondary" disabled={!visible.length || Boolean(busyAction)} onClick={() => setSelected(visible.map(item => item.lead.id))}>Selecionar filtrados</button></div><ActionBar className="bulk-action-buttons"><button disabled={!selected.length || Boolean(busyAction)} onClick={() => void runBulkAction("list", addList)}>{busyAction === "list" ? "Adicionando…" : "Adicionar à lista"}</button><button disabled={!selected.length || Boolean(busyAction)} onClick={() => { location.href = `/mensagens?leadIds=${selected.join(",")}`; }}>Criar mensagens</button><details className="radar-more-actions"><summary className="secondary">Mais ações</summary><div><button disabled={!selected.length || Boolean(busyAction)} onClick={() => void runBulkAction("crm", moveCrm)}>{busyAction === "crm" ? "Movendo…" : "Mover no CRM"}</button><button disabled={!selected.length || Boolean(busyAction)} onClick={exportSelected}>Exportar</button><button className="secondary" disabled={!selected.length || Boolean(busyAction)} onClick={() => setSelected([])}>Limpar seleção</button></div></details></ActionBar></BulkActionBar>
+    <BulkActionBar><div className="bulk-selection-controls"><strong>{selected.length} {selected.length === 1 ? "oportunidade selecionada" : "oportunidades selecionadas"}</strong><span className="sr-only">{selected.length > 0 ? "Ações em massa disponíveis." : "Selecione oportunidades para executar ações em massa."}</span><button className="secondary" disabled={!visible.length || Boolean(busyAction)} onClick={() => setSelected(visible.map(item => item.lead.id))}>Selecionar filtrados</button></div><ActionBar className="bulk-action-buttons"><ProspectListPicker leadIds={selected} campaignId={selectedCampaignId} disabled={Boolean(busyAction)} onSuccess={(message) => { setNotice(message); setError(""); setSelected([]); }} /><button disabled={!selected.length || Boolean(busyAction)} onClick={() => { location.href = `/mensagens?leadIds=${selected.join(",")}`; }}>Criar mensagens</button><details className="radar-more-actions"><summary className="secondary">Mais ações</summary><div><button disabled={!selected.length || Boolean(busyAction)} onClick={() => void runBulkAction("crm", moveCrm)}>{busyAction === "crm" ? "Movendo…" : "Mover no CRM"}</button><button disabled={!selected.length || Boolean(busyAction)} onClick={exportSelected}>Exportar</button><button className="secondary" disabled={!selected.length || Boolean(busyAction)} onClick={() => setSelected([])}>Limpar seleção</button></div></details></ActionBar></BulkActionBar>
+    {notice && <InlineAlert tone="success">{notice}</InlineAlert>}
     {error && <InlineAlert tone="error">{error}</InlineAlert>}
     {loading ? <div className="radar-grid radar-card-skeletons" aria-label="Carregando oportunidades">{Array.from({ length: 4 }, (_, index) => <SectionCard className="skeleton" key={index}><span className="sr-only">Carregando oportunidade</span></SectionCard>)}</div> : visible.length ? <div className="radar-grid">{visible.map(entry => {
       const { lead, analysis } = entry;
